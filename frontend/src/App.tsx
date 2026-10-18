@@ -174,7 +174,7 @@ export function App() {
               <figcaption>書いた字</figcaption>
             </figure>
             <figure>
-              <ModelFigure strokes={entry.strokes} marks={modelMarks} numbers label={`${char}の手本`} />
+              <ModelFigure strokes={entry.strokes} marks={modelMarks} numbers={!result.m.orderOk} label={`${char}の手本`} />
               <figcaption>手本</figcaption>
             </figure>
           </div>
