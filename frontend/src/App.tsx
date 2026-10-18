@@ -2,6 +2,7 @@ import { getCurrentUser, signOut } from "aws-amplify/auth";
 import { useEffect, useState } from "react";
 import type { Me } from "../../shared/types";
 import { api } from "./api";
+import { ChildHome } from "./pages/ChildHome";
 import { HandwritingLab } from "./pages/HandwritingLab";
 import { Login } from "./pages/Login";
 
@@ -26,7 +27,7 @@ export function App() {
   return <Home onSignOut={handleSignOut} />;
 }
 
-// ステップ2では、ログインできることの確認と、手書き判定の試作への入口だけを置く
+// 子どもは K-01 ホームへ。保護者の画面（ダッシュボード）はステップ6で作るため、今は手書き判定の試作への入口だけを置く
 function Home({ onSignOut }: { onSignOut: () => void }) {
   const [me, setMe] = useState<Me | null>(null);
   const [error, setError] = useState("");
@@ -39,6 +40,7 @@ function Home({ onSignOut }: { onSignOut: () => void }) {
   }, []);
 
   if (view === "lab") return <HandwritingLab onBack={() => setView("home")} />;
+  if (me?.role === "child") return <ChildHome nickname={me.nickname} onSignOut={onSignOut} />;
 
   return (
     <main className="page">

@@ -1,6 +1,6 @@
 # 漢字データ
 
-`grade5.json` は次のデータから `scripts/build-kanji-data.ts` で作ったもの。このファイルのライセンスは元データに合わせて CC BY-SA とする。
+`grade5.json`（5年生の193字の読みと筆順）と `readings.json`（1〜5年生の835字の学年と読み。問題文の検査に使う）は、次のデータから `scripts/build-kanji-data.ts` で作ったもの。これらのファイルのライセンスは元データに合わせて CC BY-SA とする。
 
 | 内容 | 元データ | ライセンス |
 |---|---|---|

@@ -19,15 +19,28 @@ interface KanjiEntry {
   strokes: string[];
 }
 
+// 1〜5年生の漢字の学年と読み。問題文の漢字が習った範囲か（LVL-01）と、読みが正しいか（LVL-02）の検査に使う
+const LOWER_COUNTS: Record<number, number> = { 1: 80, 2: 160, 3: 200, 4: 202, 5: EXPECTED_COUNT };
+
 const dic = readFileSync(kanjidicPath, "utf8");
 const entries = new Map<string, Omit<KanjiEntry, "strokes">>();
+const readingsByChar: Record<string, { grade: number; on: string[]; kun: string[] }> = {};
 for (const m of dic.matchAll(/<character>([\s\S]*?)<\/character>/g)) {
   const body = m[1];
-  if (!body.includes(`<grade>${GRADE}</grade>`)) continue;
+  const grade = Number(/<grade>(\d+)<\/grade>/.exec(body)?.[1] ?? 0);
+  if (grade < 1 || grade > GRADE) continue;
   const literal = /<literal>(.+?)<\/literal>/.exec(body)![1];
   const readings = (type: string) =>
     [...body.matchAll(new RegExp(`<reading r_type="${type}">(.+?)</reading>`, "g"))].map((r) => r[1]);
-  entries.set(literal, { on: readings("ja_on"), kun: readings("ja_kun") });
+  readingsByChar[literal] = { grade, on: readings("ja_on"), kun: readings("ja_kun") };
+  if (grade === GRADE) entries.set(literal, { on: readings("ja_on"), kun: readings("ja_kun") });
+}
+for (const [g, n] of Object.entries(LOWER_COUNTS)) {
+  const count = Object.values(readingsByChar).filter((r) => r.grade === Number(g)).length;
+  if (count !== n) {
+    console.error(`${g}年生の漢字が ${count} 字でした（想定 ${n} 字）。KANJIDIC2 の版を確認してください。`);
+    process.exit(1);
+  }
 }
 if (entries.size !== EXPECTED_COUNT) {
   console.error(`${GRADE}年生の漢字が ${entries.size} 字でした（想定 ${EXPECTED_COUNT} 字）。KANJIDIC2 の版を確認してください。`);
@@ -60,3 +73,7 @@ if (missing.length > 0) {
 const dest = join(import.meta.dirname, "../shared/kanji/grade5.json");
 writeFileSync(dest, JSON.stringify(out) + "\n");
 console.log(`${Object.keys(out).length} 字を ${dest} に書き出しました`);
+
+const readingsDest = join(import.meta.dirname, "../shared/kanji/readings.json");
+writeFileSync(readingsDest, JSON.stringify(readingsByChar) + "\n");
+console.log(`1〜${GRADE}年生の ${Object.keys(readingsByChar).length} 字の読みを ${readingsDest} に書き出しました`);
