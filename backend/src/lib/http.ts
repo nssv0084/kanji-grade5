@@ -25,3 +25,9 @@ export function parseBody(raw: string | undefined, isBase64Encoded?: boolean): u
     throw new HttpError(400, "リクエストの形式が正しくありません");
   }
 }
+
+/** パスワードなど、ブラウザや途中に残したくない応答 */
+export function noStore(res: APIGatewayProxyResultV2): APIGatewayProxyResultV2 {
+  if (typeof res !== "object") return res;
+  return { ...res, headers: { ...res.headers, "cache-control": "no-store" } };
+}

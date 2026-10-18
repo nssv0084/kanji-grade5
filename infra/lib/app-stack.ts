@@ -218,6 +218,8 @@ export class AppStack extends Stack {
     generatorFn.grantInvoke(apiFn);
     // 月例テストを作る子どもを選ぶため、子どもの一覧を読む（TST-03）
     userPool.grant(apiFn, "cognito-idp:ListUsersInGroup");
+    // 保護者が子どもの仮パスワードを再発行する（ACC-05。対象が子どもかは API で確かめる）
+    userPool.grant(apiFn, "cognito-idp:AdminSetUserPassword");
     // 解答用紙の写真のアップロード先と、確認の画面で見せる URL を発行する（署名に使う権限）
     photoBucket.grantPut(apiFn, "tests/*");
     photoBucket.grantRead(apiFn, "tests/*");

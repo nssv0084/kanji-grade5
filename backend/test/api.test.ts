@@ -42,6 +42,11 @@ describe("API", () => {
     expect(res.statusCode).toBe(403);
   });
 
+  it("[ACC-05] 子どもはパスワードを再発行できない", async () => {
+    const res = (await handler(eventWith(child, "POST /admin/children/{child}/password"))) as { statusCode: number };
+    expect(res.statusCode).toBe(403);
+  });
+
   it("[NFR-04] 子どもは月例テストを作れない・見られない", async () => {
     for (const route of ["GET /admin/tests", "POST /admin/tests", "POST /admin/tests/{child}/{month}/photos", "POST /admin/tests/{child}/{month}/grade", "PUT /admin/tests/{child}/{month}"]) {
       const res = (await handler(eventWith(child, route))) as { statusCode: number };
