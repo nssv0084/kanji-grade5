@@ -1,9 +1,10 @@
 import type { APIGatewayProxyEventV2WithJWTAuthorizer, APIGatewayProxyResultV2 } from "aws-lambda";
-import type { Me } from "../../shared/types";
+import type { Me, PasswordReset } from "../../shared/types";
 import { getOverview, getReviewItems, reviewItem, startGeneration } from "./admin";
 import { getChildren } from "./dashboard";
 import { getCaller, requireParent, type Caller } from "./lib/auth";
-import { HttpError, json } from "./lib/http";
+import { resetChildPassword } from "./lib/children";
+import { HttpError, json, noStore } from "./lib/http";
 import type { RouteKey } from "./routes";
 import { getKanjiMap, getToday, submitAnswer } from "./study";
 import { confirmTest, createTest, createUploads, listTests, myResults, startGrading } from "./monthlyTest";
@@ -23,6 +24,8 @@ const handlers: Record<RouteKey, Handler> = {
   "PUT /admin/items/{id}": async (_c, event) => json(200, await reviewItem(event)),
   "POST /admin/generate": async () => json(202, await startGeneration()),
   "GET /admin/children": async () => json(200, await getChildren()),
+  "POST /admin/children/{child}/password": async (_c, event) =>
+    noStore(json(200, { temporaryPassword: await resetChildPassword(event.pathParameters?.child ?? "") } satisfies PasswordReset)),
   "GET /admin/tests": async () => json(200, await listTests()),
   "POST /admin/tests": async (_c, event) => json(201, await createTest(event)),
   "POST /admin/tests/{child}/{month}/photos": async (_c, event) => json(200, await createUploads(event)),

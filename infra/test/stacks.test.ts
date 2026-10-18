@@ -71,6 +71,14 @@ describe("アプリのスタック", () => {
     });
   });
 
+  it("[ACC-05] 仮パスワードの再発行は、このアプリのユーザープールにだけ許す", () => {
+    const statements = Object.values(appT.findResources("AWS::IAM::Policy")).flatMap((p) => p.Properties.PolicyDocument.Statement as { Action: string | string[]; Resource: unknown }[]);
+    const reset = statements.filter((s) => [s.Action].flat().includes("cognito-idp:AdminSetUserPassword"));
+    expect(reset).toHaveLength(1);
+    expect(JSON.stringify(reset[0].Resource)).toContain("UserPool");
+    expect(reset[0].Resource).not.toBe("*");
+  });
+
   it("[ACC-06] パスワードは8文字以上で数字を含む", () => {
     appT.hasResourceProperties("AWS::Cognito::UserPool", {
       Policies: { PasswordPolicy: Match.objectLike({ MinimumLength: 8, RequireNumbers: true }) },

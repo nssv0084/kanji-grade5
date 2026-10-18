@@ -128,6 +128,11 @@ export interface TestResult {
 /** GET /admin/children の応答の1件（P-01、DSH-01、DSH-02、DSH-05） */
 export type ChildDashboard = ChildSummary & { childId: string; nickname: string };
 
+/** POST /admin/children/{child}/password の応答（ACC-05）。画面に一度だけ表示する */
+export interface PasswordReset {
+  temporaryPassword: string;
+}
+
 /** GET /admin/tests の応答 */
 export interface TestsResponse {
   /** 今の学習日の月（yyyy-mm） */

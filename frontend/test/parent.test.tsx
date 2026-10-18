@@ -71,6 +71,28 @@ describe("保護者のホーム", () => {
     expect(screen.getByRole("listitem", { name: "17(土) 15問" })).toBeInTheDocument();
   });
 
+  it("[ACC-05] 確かめてから子どもの仮パスワードを再発行し、一度だけ表示する", async () => {
+    const user = userEvent.setup();
+    const fake = ["abcd", "2345"].join("");
+    api.mockImplementation(async (method: string, path: string) => {
+      if (path === "/admin/children") return [child];
+      if (method === "POST" && path === "/admin/children/c1/password") return { temporaryPassword: fake };
+      return path === "/admin/overview" ? overview : path === "/admin/tests" ? tests : [];
+    });
+    const confirm = vi.spyOn(window, "confirm").mockReturnValueOnce(false).mockReturnValueOnce(true);
+    render(<ParentHome nickname="パパ" onOpenLab={vi.fn()} onSignOut={vi.fn()} />);
+    const button = await screen.findByRole("button", { name: /仮パスワードを再発行/ });
+
+    await user.click(button);
+    expect(api).not.toHaveBeenCalledWith("POST", "/admin/children/c1/password");
+
+    await user.click(button);
+    expect(await screen.findByText(fake)).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "閉じる" }));
+    expect(screen.queryByText(fake)).not.toBeInTheDocument();
+    confirm.mockRestore();
+  });
+
   it("[DSH-02] [DSH-05] 苦手な字と直近の結果、予定との差を出す", async () => {
     render(<ParentHome nickname="パパ" onOpenLab={vi.fn()} onSignOut={vi.fn()} />);
     expect(await screen.findByText("護")).toBeInTheDocument();

@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import type { ChildDashboard } from "../../../shared/types";
+import type { ChildDashboard, PasswordReset } from "../../../shared/types";
 import { api } from "../api";
 
 const WEEKDAY = ["日", "月", "火", "水", "木", "金", "土"];
@@ -69,6 +69,49 @@ function Child({ c, showName }: { c: ChildDashboard; showName: boolean }) {
           </ul>
         </div>
       )}
+
+      <PasswordResetButton childId={c.childId} />
+    </div>
+  );
+}
+
+/** 子どもの仮パスワードの再発行（ACC-05）。仮パスワードは一度だけ表示し、どこにも保存しない */
+function PasswordResetButton({ childId }: { childId: string }) {
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
+  const [busy, setBusy] = useState(false);
+
+  const reset = async () => {
+    if (!window.confirm("仮パスワードを再発行しますか？ 今のパスワードは使えなくなります。")) return;
+    setBusy(true);
+    setError("");
+    try {
+      setPassword((await api<PasswordReset>("POST", `/admin/children/${childId}/password`)).temporaryPassword);
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  if (password)
+    return (
+      <div className="notice stack">
+        <p>
+          仮パスワード: <code className="temp-password">{password}</code>
+        </p>
+        <p className="small">子どもに伝えてください。ログインすると、新しいパスワードを決める画面になります。この表示を閉じると、もう一度は見られません（7日で使えなくなります）。</p>
+        <button type="button" className="secondary" onClick={() => setPassword("")}>
+          閉じる
+        </button>
+      </div>
+    );
+  return (
+    <div>
+      {error && <p className="error">{error}</p>}
+      <button type="button" className="secondary" disabled={busy} onClick={reset}>
+        {busy ? "再発行しています…" : "パスワードを忘れたとき: 仮パスワードを再発行"}
+      </button>
     </div>
   );
 }
