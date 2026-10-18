@@ -16,6 +16,12 @@ export interface DayAmount {
   correct: number;
 }
 
+export interface TestScore {
+  month: string;
+  score: number;
+  total: number;
+}
+
 export interface ChildSummary {
   learned: number;
   mastered: number;
@@ -30,6 +36,8 @@ export interface ChildSummary {
   week: DayAmount[];
   /** 苦手な字と、直近の書き取りの結果（古い順）（DSH-02） */
   weakKanji: { kanji: string; recent: boolean[] }[];
+  /** 確定した月例テストの点数（古い月から）（DSH-05） */
+  testScores: TestScore[];
   /** 学習計画の進み具合（DSH-05）。計画がなければ undefined */
   progress?: {
     /** 学習順の何字目まで習ったか */
@@ -51,8 +59,16 @@ export function learnedCount(plan: Plan, kanji: Record<string, KanjiState>): num
   return i === -1 ? order.length : i;
 }
 
-export function summarize(args: { today: string; plan?: Plan; kanji: Record<string, KanjiState>; profile: Streak; days: DayAmount[]; total: number }): ChildSummary {
-  const { today, plan, kanji, profile, days, total } = args;
+export function summarize(args: {
+  today: string;
+  plan?: Plan;
+  kanji: Record<string, KanjiState>;
+  profile: Streak;
+  days: DayAmount[];
+  total: number;
+  tests?: TestScore[];
+}): ChildSummary {
+  const { today, plan, kanji, profile, days, total, tests = [] } = args;
   const states = Object.entries(kanji).map(([k, s]) => ({ k, s, m: mastery(!!s.learnedOn, s.writes) }));
   const idleDays = profile.lastStudyDate ? daysBetween(profile.lastStudyDate, today) : undefined;
   const byDate = new Map(days.map((d) => [d.date, d]));
@@ -89,6 +105,7 @@ export function summarize(args: { today: string; plan?: Plan; kanji: Record<stri
       .filter((x) => x.m === "weak")
       .sort((a, b) => (plan ? planOrder(plan).indexOf(a.k) - planOrder(plan).indexOf(b.k) : a.k.localeCompare(b.k)))
       .map((x) => ({ kanji: x.k, recent: x.s.writes.slice(-5).map((w) => w.correct) })),
+    testScores: [...tests].sort((a, b) => a.month.localeCompare(b.month)),
     progress,
   };
 }

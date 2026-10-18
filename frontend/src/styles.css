@@ -591,6 +591,11 @@ details summary {
   white-space: nowrap;
 }
 
+.score-list {
+  margin: 0;
+  padding-left: 1.2em;
+}
+
 .weak-list {
   margin: 0;
   padding: 0;

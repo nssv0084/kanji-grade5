@@ -43,6 +43,19 @@ function Child({ c, showName }: { c: ChildDashboard; showName: boolean }) {
         ))}
       </div>
 
+      {c.testScores.length > 0 && (
+        <div className="stack">
+          <h3>月例テストの点数</h3>
+          <ul className="score-list">
+            {c.testScores.map((t) => (
+              <li key={t.month}>
+                {Number(t.month.slice(5))}月 {t.score} / {t.total}（{Math.round((t.score / t.total) * 100)}%）
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
       {c.weakKanji.length > 0 && (
         <div className="stack">
           <h3>苦手な字</h3>
