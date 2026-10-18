@@ -1,0 +1,15 @@
+{
+  "name": "backend",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "devDependencies": {
+    "@types/aws-lambda": "^8.10.164",
+    "@types/node": "^22.10.0",
+    "typescript": "^5.9.3",
+    "vitest": "^5.0.5"
+  }
+}

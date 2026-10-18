@@ -1,7 +1,7 @@
 import { fireEvent, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it } from "vitest";
-import { App } from "../src/App";
+import { HandwritingLab } from "../src/pages/HandwritingLab";
 
 // jsdom は canvas の描画とレイアウトを持たないため、線の数と操作だけを確かめる
 function drawStroke(pad: HTMLElement, pointerId = 1) {
@@ -13,7 +13,7 @@ function drawStroke(pad: HTMLElement, pointerId = 1) {
 describe("書くマス", () => {
   it("[HWR-06] 1画もどす・書き直すで線を消せる", async () => {
     const user = userEvent.setup();
-    render(<App />);
+    render(<HandwritingLab />);
     const pad = screen.getByTestId("writing-pad");
     drawStroke(pad);
     drawStroke(pad);
@@ -27,7 +27,7 @@ describe("書くマス", () => {
   });
 
   it("[HWR-06] 書いている途中に2本目の指が触れても線を書かない", () => {
-    render(<App />);
+    render(<HandwritingLab />);
     const pad = screen.getByTestId("writing-pad");
     fireEvent.pointerDown(pad, { pointerId: 1, clientX: 10, clientY: 10 });
     drawStroke(pad, 2);
@@ -37,7 +37,7 @@ describe("書くマス", () => {
 
   it("[HWR-05] 判定すると、書いた字と手本を並べて表示する", async () => {
     const user = userEvent.setup();
-    render(<App />);
+    render(<HandwritingLab />);
     drawStroke(screen.getByTestId("writing-pad"));
     await user.click(screen.getByRole("button", { name: "判定する" }));
     expect(screen.getByRole("img", { name: "書いた字" })).toBeInTheDocument();
