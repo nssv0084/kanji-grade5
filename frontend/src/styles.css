@@ -1,0 +1,355 @@
+/* ---------- デザインの基本（英検アプリと同じ色・形） ---------- */
+:root {
+  --bg: #f4f6fb;
+  --surface: #ffffff;
+  --text: #1f2937;
+  --muted: #6b7280;
+  --border: #e4e8f0;
+  --primary: #3b6ef5;
+  --primary-strong: #2a58d6;
+  --primary-soft: #e9efff;
+  --primary-text: #ffffff;
+  --accent: #ff8a3d;
+  --success: #1f9d55;
+  --danger: #e5484d;
+  --radius: 16px;
+  --radius-sm: 10px;
+  --shadow: 0 1px 2px rgb(31 41 55 / 0.04), 0 4px 14px rgb(31 41 55 / 0.06);
+  --font: "M PLUS Rounded 1c", system-ui, -apple-system, "Hiragino Maru Gothic ProN", "Hiragino Sans", sans-serif;
+  --pad-bg: #fffdf7;
+  --pad-ink: #1f2937;
+  --pad-guide: #d6dbe6;
+  color-scheme: light dark;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #0f1420;
+    --surface: #182033;
+    --text: #e8ecf4;
+    --muted: #9aa5b8;
+    --border: #2a3550;
+    --primary: #6b93ff;
+    --primary-strong: #8aa9ff;
+    --primary-soft: #22305a;
+    --accent: #ff9d5c;
+    --success: #3ccf7f;
+    --danger: #ff6b70;
+    --shadow: 0 1px 2px rgb(0 0 0 / 0.3), 0 4px 14px rgb(0 0 0 / 0.25);
+    --pad-bg: #1d2740;
+    --pad-ink: #e8ecf4;
+    --pad-guide: #34405e;
+  }
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font);
+  font-size: 16px;
+  font-weight: 500;
+  line-height: 1.65;
+  /* 端まで引っぱったときの戻る・更新の動きを抑える */
+  overscroll-behavior: none;
+}
+
+.page {
+  max-width: 452px;
+  margin: 0 auto;
+  padding: 16px 16px calc(32px + env(safe-area-inset-bottom));
+  display: grid;
+  gap: 16px;
+}
+
+h1 {
+  font-size: 1.25rem;
+  margin: 0;
+}
+
+h2 {
+  font-size: 1.05rem;
+  margin: 0 0 8px;
+}
+
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 16px;
+}
+
+button {
+  font: inherit;
+  min-height: 44px;
+  padding: 8px 14px;
+  border-radius: var(--radius-sm);
+  border: 1px solid transparent;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+button:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+button.primary {
+  background: var(--primary);
+  color: var(--primary-text);
+  font-weight: 700;
+}
+
+button.secondary {
+  background: var(--primary-soft);
+  color: var(--primary-strong);
+  border-color: var(--border);
+}
+
+button.wide {
+  width: 100%;
+  margin-top: 12px;
+}
+
+input {
+  font: inherit;
+  min-height: 44px;
+  width: 4em;
+  padding: 6px 10px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  color: var(--text);
+}
+
+.error {
+  color: var(--danger);
+  margin: 4px 0 0;
+}
+
+/* ---------- 問題 ---------- */
+.readings p {
+  margin: 0;
+  font-size: 1.15rem;
+  font-weight: 700;
+}
+
+.prompt-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.char-picker {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.model-preview {
+  width: 160px;
+  margin: 12px auto 0;
+}
+
+/* ---------- 書くマス ---------- */
+.writing {
+  display: grid;
+  gap: 8px;
+}
+
+.stroke-count {
+  margin: 0;
+  color: var(--muted);
+  text-align: right;
+}
+
+.pad {
+  display: block;
+  width: 100%;
+  max-width: 420px;
+  aspect-ratio: 1;
+  margin: 0 auto;
+  background: var(--pad-bg);
+  border: 2px solid var(--border);
+  border-radius: var(--radius-sm);
+  /* 書いている間にスクロール・拡大・文字の選択をさせない（HWR-06） */
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+}
+
+.pad-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.pad-actions > button {
+  flex: 1 1 auto;
+}
+
+/* ---------- 結果 ---------- */
+.verdict {
+  font-size: 1.6rem;
+  font-weight: 800;
+  margin: 0;
+}
+
+.verdict.correct {
+  color: var(--success);
+}
+
+.verdict.unsure {
+  color: var(--accent);
+}
+
+.verdict.wrong {
+  color: var(--danger);
+}
+
+.notes {
+  margin: 4px 0 12px;
+  padding-left: 1.2em;
+}
+
+.compare {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.compare figure {
+  margin: 0;
+  text-align: center;
+}
+
+.compare figcaption {
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.figure {
+  display: block;
+  width: 100%;
+  aspect-ratio: 1;
+  background: var(--pad-bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+}
+
+.guides line {
+  stroke: var(--pad-guide);
+  stroke-width: 0.6;
+  stroke-dasharray: 3 3;
+  vector-effect: non-scaling-stroke;
+}
+
+.model-stroke,
+.user-stroke {
+  fill: none;
+  stroke: var(--pad-ink);
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.model-stroke {
+  stroke-width: 4;
+}
+
+.user-stroke {
+  stroke-width: 0.035;
+}
+
+.model-stroke.ok,
+.user-stroke.ok {
+  stroke: var(--success);
+}
+
+.model-stroke.bad,
+.user-stroke.bad {
+  stroke: var(--danger);
+}
+
+.model-stroke.missing {
+  stroke: var(--accent);
+  stroke-dasharray: 0.04 0.04;
+}
+
+.model-stroke.animate {
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+  animation: draw-stroke 0.5s ease-out forwards;
+}
+
+@keyframes draw-stroke {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .model-stroke.animate {
+    animation: none;
+    stroke-dashoffset: 0;
+  }
+}
+
+.stroke-number {
+  font-size: 7px;
+  fill: var(--primary);
+  font-family: system-ui, sans-serif;
+}
+
+.metrics {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 2px 12px;
+  margin: 12px 0;
+  font-size: 0.9rem;
+}
+
+.metrics dt {
+  color: var(--muted);
+}
+
+.metrics dd {
+  margin: 0;
+  font-variant-numeric: tabular-nums;
+}
+
+.feedback p {
+  margin: 0 0 8px;
+}
+
+/* ---------- しきい値 ---------- */
+details summary {
+  cursor: pointer;
+  font-weight: 700;
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+}
+
+.threshold {
+  display: grid;
+  gap: 4px;
+  margin: 8px 0;
+  font-variant-numeric: tabular-nums;
+}
+
+.threshold input {
+  width: 100%;
+}
+
+.credit {
+  color: var(--muted);
+  font-size: 0.8rem;
+  text-align: center;
+}
