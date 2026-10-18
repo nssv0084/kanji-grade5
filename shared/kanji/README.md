@@ -4,13 +4,14 @@
 
 | 内容 | 元データ | ライセンス |
 |---|---|---|
-| 学年、音読み、訓読み | KANJIDIC2（Electronic Dictionary Research and Development Group）https://www.edrdg.org/wiki/index.php/KANJIDIC_Project | CC BY-SA 4.0 |
+| 音読み・訓読み（常用漢字表） | ウィキペディア日本語版「常用漢字一覧」https://ja.wikipedia.org/wiki/常用漢字一覧 | CC BY-SA 4.0 |
+| 学年 | KANJIDIC2（Electronic Dictionary Research and Development Group）https://www.edrdg.org/wiki/index.php/KANJIDIC_Project | CC BY-SA 4.0 |
 | 筆順（各画の SVG パス） | KanjiVG（Ulrich Apel）https://kanjivg.tagaini.net/ 。r20260714 | CC BY-SA 3.0 |
 
 作り直すとき:
 
 ```powershell
-npx tsx scripts/build-kanji-data.ts <kanjidic2.xml> <kanjivg.xml>
+npx tsx scripts/build-kanji-data.ts <kanjidic2.xml> <kanjivg.xml> <常用漢字一覧.wiki>
 ```
 
 元データは `kanjidic2.xml.gz`（edrdg.org）と、KanjiVG のリリースの `kanjivg-YYYYMMDD.xml.gz` を展開したもの。リポジトリには入れない。

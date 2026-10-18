@@ -35,7 +35,8 @@ export function checkItem(item: ItemDraft): CheckResult {
   const plainText = parseText(item.text)
     .map((s) => (s.kind === "plain" ? s.text : s.word))
     .join("");
-  for (const c of new Set([...plainText].filter(isKanji))) {
+  // 「々」は前の字をくり返す記号なので、漢字としては数えない
+  for (const c of new Set([...plainText].filter((ch) => isKanji(ch) && ch !== "々"))) {
     if (!(c in KANJI_INFO)) errors.push(`「${c}」は5年生までに習わない漢字です。ひらがなにしてください`);
   }
 
@@ -73,7 +74,8 @@ function charReadings(c: string, first: boolean, last: boolean): string[] {
 }
 
 function readingFits(word: string, reading: string): boolean {
-  const chars = [...word];
+  // 「々」は前の字に置きかえて読む（人々 → 人人）
+  const chars = [...word].map((c, i, a) => (c === "々" && i > 0 ? a[i - 1] : c));
   const fits = (i: number, rest: string): boolean => {
     if (i === chars.length) return rest === "";
     const c = chars[i];

@@ -111,3 +111,16 @@ describe("保護者の承認数", () => {
     expect(parentApprovedCount(items, "write")).toBe(1);
   });
 });
+
+describe("問う語の重なり", () => {
+  it("[GEN-04] すでに使った語を、使わない語として渡す", () => {
+    const p = generationPrompt({ kanji: "喜", write: 1, read: 1, allowedGrade5: ["喜"], existing: ["母を{喜|よろこ}ばせる。", "{喜|よろこ}びの声。"] });
+    expect(p).toContain("すでに使った語（これらの語は使わない）: 喜");
+  });
+
+  it("[LVL-02] 生成に渡す読みは常用漢字表の読みだけ（表外訓を渡さない）", () => {
+    const p = generationPrompt({ kanji: "象", write: 1, read: 1, allowedGrade5: ["象"], existing: [] });
+    expect(p).toContain("音読み: ショウ・ゾウ");
+    expect(p).toContain("訓読み: なし");
+  });
+});

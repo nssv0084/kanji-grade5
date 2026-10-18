@@ -1,12 +1,41 @@
 import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 
-// KANJIDIC2（学年・読み）と KanjiVG（筆順）から、5年生の配当漢字のデータを作る。
-// 使い方: npx tsx scripts/build-kanji-data.ts <kanjidic2.xml> <kanjivg.xml>
-// 元データ: https://www.edrdg.org/kanjidic/kanjidic2.xml.gz 、https://github.com/KanjiVG/kanjivg/releases の kanjivg-YYYYMMDD.xml.gz
-const [kanjidicPath, kanjivgPath] = process.argv.slice(2);
-if (!kanjidicPath || !kanjivgPath) {
-  console.error("使い方: npx tsx scripts/build-kanji-data.ts <kanjidic2.xml> <kanjivg.xml>");
+// KANJIDIC2（学年）、常用漢字表（読み）、KanjiVG（筆順）から、1〜5年生の漢字のデータを作る。
+// 使い方: npx tsx scripts/build-kanji-data.ts <kanjidic2.xml> <kanjivg.xml> <常用漢字一覧.wiki>
+// 元データ: https://www.edrdg.org/kanjidic/kanjidic2.xml.gz 、https://github.com/KanjiVG/kanjivg/releases の kanjivg-YYYYMMDD.xml.gz 、
+// https://ja.wikipedia.org/w/index.php?title=常用漢字一覧&action=raw （常用漢字表の音訓。KANJIDIC2 の読みには表外の読みが混ざるため、こちらを使う）
+const [kanjidicPath, kanjivgPath, joyoPath] = process.argv.slice(2);
+if (!kanjidicPath || !kanjivgPath || !joyoPath) {
+  console.error("使い方: npx tsx scripts/build-kanji-data.ts <kanjidic2.xml> <kanjivg.xml> <常用漢字一覧.wiki>");
+  process.exit(1);
+}
+
+// 常用漢字表の音訓（「ショウ、まね-く」の形）を、KANJIDIC2 と同じ形（音はカタカナ、訓は「まね.く」）にする
+const joyo = new Map<string, { on: string[]; kun: string[] }>();
+for (const line of readFileSync(joyoPath, "utf8").split(/\r?\n/)) {
+  const m = /\[\[wikt:(.)\|.\]\]/u.exec(line);
+  if (!m || !line.startsWith("|")) continue;
+  const readings = line
+    .split("||")
+    .pop()!
+    .replace(/<ref[^>/]*>[\s\S]*?<\/ref>/g, "")
+    .replace(/<[^>]+>/g, "")
+    .replace(/\{\{[^}]*\}\}/g, "")
+    // 都道府県名にだけ使う読みは（ ）つきで書かれている
+    .replace(/[（）()]/g, "")
+    .trim();
+  const parts = readings
+    .split(/[、,]/)
+    .map((r) => r.trim())
+    .filter(Boolean);
+  joyo.set(m[1], {
+    on: parts.filter((r) => /^[ァ-ーー]+$/.test(r)),
+    kun: parts.filter((r) => /^[ぁ-ゖー-]+$/.test(r)).map((r) => r.replace("-", ".")),
+  });
+}
+if (joyo.size < 2136) {
+  console.error(`常用漢字一覧から ${joyo.size} 字しか読めませんでした（想定 2136 字）。ページの形式を確認してください。`);
   process.exit(1);
 }
 
@@ -30,10 +59,13 @@ for (const m of dic.matchAll(/<character>([\s\S]*?)<\/character>/g)) {
   const grade = Number(/<grade>(\d+)<\/grade>/.exec(body)?.[1] ?? 0);
   if (grade < 1 || grade > GRADE) continue;
   const literal = /<literal>(.+?)<\/literal>/.exec(body)![1];
-  const readings = (type: string) =>
-    [...body.matchAll(new RegExp(`<reading r_type="${type}">(.+?)</reading>`, "g"))].map((r) => r[1]);
-  readingsByChar[literal] = { grade, on: readings("ja_on"), kun: readings("ja_kun") };
-  if (grade === GRADE) entries.set(literal, { on: readings("ja_on"), kun: readings("ja_kun") });
+  const j = joyo.get(literal);
+  if (!j) {
+    console.error(`「${literal}」が常用漢字一覧にありません`);
+    process.exit(1);
+  }
+  readingsByChar[literal] = { grade, on: j.on, kun: j.kun };
+  if (grade === GRADE) entries.set(literal, { on: j.on, kun: j.kun });
 }
 for (const [g, n] of Object.entries(LOWER_COUNTS)) {
   const count = Object.values(readingsByChar).filter((r) => r.grade === Number(g)).length;
