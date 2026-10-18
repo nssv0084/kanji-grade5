@@ -25,20 +25,21 @@
 
 ## 初回セットアップ
 
-英検アプリと同じ AWS アカウント・プロファイル（`eiken`）を使う。
+英検アプリと同じ AWS アカウント・プロファイル（`eiken`）を使う。CDK のブートストラップは英検アプリで済んでいる（東京と us-east-1）。
 
 1. `npm install`
-2. デプロイ: `npm run deploy`（`KanjiCert`、`KanjiApp`）
-3. Anthropic の API キー（このアプリ専用のキー）を Secrets Manager の `kanji/anthropic-api-key` に登録する。
-4. 保護者アカウントを作る: `.\scripts\create-parent.ps1 -Username papa -Nickname "パパ" -TempPassword "Temp1234"`
-5. `https://kanji.ikehiroki.com` を開き、仮パスワードでログインして自分のパスワードを設定する。
+2. 予算アラートとエラー通知の送り先を環境変数で渡す（リポジトリは公開のため、ファイルには書かない）: `$env:ALERT_EMAIL = "（メールアドレス）"`
+3. デプロイ: `npm run deploy`（`KanjiCert`、`KanjiApp`）。通知の確認メールが届いたら承認する。
+4. 請求のコンソールの「コスト配分タグ」で、ユーザー定義タグ `app` を有効にする（予算アラートは `app=kanji` の費用だけを見る。有効になるまで最大24時間）。
+5. 保護者アカウントを作る: `.\scripts\create-user.ps1 -Role parent -Username papa -Nickname "パパ" -TempPassword "Temp1234"`（子どもは `-Role child`）
+6. `https://kanji.ikehiroki.com` を開き、仮パスワードでログインして自分のパスワードを設定する。
+7. （ステップ4で）Anthropic の API キー（このアプリ専用のキー）を Secrets Manager の `kanji/anthropic-api-key` に登録する。
 
 ### GitHub Actions からのデプロイ（初回のみ）
 
-1. GitHub に非公開リポジトリを作り、push する。
-2. デプロイ用ロールを作る: `npm run deploy:github -w infra`（`KanjiGithub`。OIDC プロバイダーは英検アプリのものを参照する）
-3. `gh api repos/OWNER/REPO/actions/oidc/customization/sub` の値を `infra/config.ts` の `githubSubjectPrefix` に入れ、もう一度 2 を実行する。
-4. リポジトリの設定で、`production` 環境（自分の承認を必須にする）と、main のブランチ保護（ステータスチェック `verify` を必須にする）を作る。
+1. デプロイ用ロールを作る: `npm run deploy:github -w infra`（`KanjiGithub`。OIDC プロバイダーは英検アプリのものを参照する）
+2. リポジトリの Secret `ALERT_EMAIL` に通知の送り先を登録する: `gh secret set ALERT_EMAIL`（入力を求められたら貼り付ける）
+3. `production` 環境（自分の承認が必須）と、main のブランチ保護（ステータスチェック `verify` が必須）は設定済み。
 
 ## 開発
 
