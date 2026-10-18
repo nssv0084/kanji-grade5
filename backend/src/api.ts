@@ -1,6 +1,7 @@
 import type { APIGatewayProxyEventV2WithJWTAuthorizer, APIGatewayProxyResultV2 } from "aws-lambda";
 import type { Me } from "../../shared/types";
 import { getOverview, getReviewItems, reviewItem, startGeneration } from "./admin";
+import { getChildren } from "./dashboard";
 import { getCaller, requireParent, type Caller } from "./lib/auth";
 import { HttpError, json } from "./lib/http";
 import type { RouteKey } from "./routes";
@@ -21,6 +22,7 @@ const handlers: Record<RouteKey, Handler> = {
   "GET /admin/review": async () => json(200, await getReviewItems()),
   "PUT /admin/items/{id}": async (_c, event) => json(200, await reviewItem(event)),
   "POST /admin/generate": async () => json(202, await startGeneration()),
+  "GET /admin/children": async () => json(200, await getChildren()),
   "GET /admin/tests": async () => json(200, await listTests()),
   "POST /admin/tests": async (_c, event) => json(201, await createTest(event)),
   "POST /admin/tests/{child}/{month}/photos": async (_c, event) => json(200, await createUploads(event)),

@@ -37,6 +37,11 @@ describe("API", () => {
     expect(JSON.parse(res.body)).toEqual({ nickname: "はなこ", role: "child" });
   });
 
+  it("[NFR-04] 子どもはダッシュボード（家族の学習状況）を見られない", async () => {
+    const res = (await handler(eventWith(child, "GET /admin/children"))) as { statusCode: number };
+    expect(res.statusCode).toBe(403);
+  });
+
   it("[NFR-04] 子どもは月例テストを作れない・見られない", async () => {
     for (const route of ["GET /admin/tests", "POST /admin/tests", "POST /admin/tests/{child}/{month}/photos", "POST /admin/tests/{child}/{month}/grade", "PUT /admin/tests/{child}/{month}"]) {
       const res = (await handler(eventWith(child, route))) as { statusCode: number };

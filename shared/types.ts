@@ -1,5 +1,6 @@
 // 画面と API で共通の型
 import type { ItemType } from "./items/text";
+import type { ChildSummary } from "./study/dashboard";
 import type { Mastery } from "./study/srs";
 import type { TestQuestion } from "./test/compose";
 import type { FinalVerdict, GradedAnswer } from "./test/grade";
@@ -123,6 +124,9 @@ export interface TestResult {
   /** 間違えた字（書き取り・読みの対象の字） */
   missed: string[];
 }
+
+/** GET /admin/children の応答の1件（P-01、DSH-01、DSH-02、DSH-05） */
+export type ChildDashboard = ChildSummary & { childId: string; nickname: string };
 
 /** GET /admin/tests の応答 */
 export interface TestsResponse {

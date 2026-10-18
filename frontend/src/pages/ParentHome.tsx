@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import { charsToWrite, parseText, targetOf } from "../../../shared/items/text";
 import type { AdminItem, AdminOverview, JobSummary } from "../../../shared/types";
 import { api } from "../api";
+import { ChildStatus } from "../components/ChildStatus";
 import { MonthlyTests } from "../components/MonthlyTests";
 
 const JOB_STATUS: Record<JobSummary["status"], string> = { running: "作成中", done: "完了", failed: "失敗", budget: "予算で停止" };
@@ -90,6 +91,8 @@ export function ParentHome({ nickname, onOpenLab, onSignOut }: { nickname: strin
       <h1>{nickname} さん（保護者）</h1>
       {error && <p className="error">{error}</p>}
       {!overview && !error && <p className="muted">読み込み中…</p>}
+
+      <ChildStatus />
 
       {overview && u && (
         <section className="card stack">

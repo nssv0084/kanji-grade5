@@ -1,7 +1,7 @@
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import type { AdminItem, AdminOverview, TestsResponse } from "../../shared/types";
+import type { AdminItem, AdminOverview, ChildDashboard, TestsResponse } from "../../shared/types";
 
 const api = vi.fn();
 vi.mock("../src/api", () => ({ api: (...args: unknown[]) => api(...args) }));
@@ -35,7 +35,22 @@ const tests: TestsResponse = {
     },
   ],
 };
-const item: AdminItem ={ itemId: "write-1", kanji: "評", type: "write", text: "新しいゲームは{好評|こうひょう}だ。", status: "review", source: "ai", createdAt: "x" };
+const child: ChildDashboard = {
+  childId: "c1",
+  nickname: "子ども",
+  learned: 22,
+  mastered: 1,
+  weak: 1,
+  total: 193,
+  streak: 0,
+  lastStudyDate: "2026-10-17",
+  idleDays: 3,
+  idleAlert: true,
+  week: Array.from({ length: 7 }, (_, i) => ({ date: `2026-10-${14 + i}`, answers: i === 3 ? 15 : 0, correct: i === 3 ? 12 : 0 })),
+  weakKanji: [{ kanji: "護", recent: [true, false, false] }],
+  progress: { learnedCount: 22, monthTarget: 30, behind: 2, reviewMonth: false, daysLeft: 128 },
+};
+const item: AdminItem = { itemId: "write-1", kanji: "評", type: "write", text: "新しいゲームは{好評|こうひょう}だ。", status: "review", source: "ai", createdAt: "x" };
 
 describe("保護者のホーム", () => {
   beforeEach(() => {
@@ -43,8 +58,23 @@ describe("保護者のホーム", () => {
       if (path === "/admin/overview") return overview;
       if (path === "/admin/review") return [item];
       if (path === "/admin/tests") return tests;
+      if (path === "/admin/children") return [child];
       return {};
     });
+  });
+
+  it("[DSH-01] [STK-03] 子どもの状況を出し、学習が空いたら目立たせる", async () => {
+    render(<ParentHome nickname="パパ" onOpenLab={vi.fn()} onSignOut={vi.fn()} />);
+    expect(await screen.findByText("最後の学習から 3 日たっています")).toBeInTheDocument();
+    expect(screen.getByText(/習った字 22 ・ 覚えた字 1 ・ 苦手な字 1（全 193 字）/)).toBeInTheDocument();
+    expect(screen.getByRole("listitem", { name: "17(土) 15問" })).toBeInTheDocument();
+  });
+
+  it("[DSH-02] [DSH-05] 苦手な字と直近の結果、予定との差を出す", async () => {
+    render(<ParentHome nickname="パパ" onOpenLab={vi.fn()} onSignOut={vi.fn()} />);
+    expect(await screen.findByText("護")).toBeInTheDocument();
+    expect(screen.getByText("直近の書き取り ○××")).toBeInTheDocument();
+    expect(screen.getByText("予定より 2 字遅れ")).toBeInTheDocument();
   });
 
   it("[TST-03] 月の最終週に印刷をうながし、今月のテストを作れる", async () => {

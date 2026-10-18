@@ -556,6 +556,61 @@ details summary {
   letter-spacing: 0.2em;
 }
 
+.alert {
+  margin: 0;
+  padding: 10px 12px;
+  border-radius: var(--radius-sm);
+  background: #fdecec;
+  color: var(--danger);
+  font-weight: 700;
+}
+
+.week {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 4px;
+  align-items: end;
+}
+
+.week-day {
+  display: grid;
+  justify-items: center;
+  gap: 2px;
+  font-size: 0.75rem;
+}
+
+.week-bar {
+  width: 70%;
+  min-height: 2px;
+  border-radius: 4px 4px 0 0;
+  background: var(--primary);
+}
+
+.week-label {
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+.weak-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 6px;
+}
+
+.weak-list li {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.weak-kanji {
+  font-size: 1.6rem;
+  font-weight: 700;
+  min-width: 1.6em;
+}
+
 .tests {
   margin: 0;
   padding: 0;
