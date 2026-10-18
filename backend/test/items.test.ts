@@ -56,3 +56,15 @@ describe("問題の機械的な検査", () => {
     expect(r.warnings).toHaveLength(1);
   });
 });
+
+describe("常用漢字表の読み", () => {
+  it("[LVL-02] 常用漢字表にない読み（表外訓）は確認を求める", () => {
+    expect(checkItem({ kanji: "象", type: "read", text: "ハートの形を{象|かたど}ったクッキー。" }).warnings).toHaveLength(1);
+    expect(checkItem({ kanji: "適", type: "read", text: "目的に{適|かな}った道具。" }).warnings).toHaveLength(1);
+    expect(checkItem({ kanji: "象", type: "read", text: "動物園で{象|ぞう}を見た。" })).toEqual({ errors: [], warnings: [] });
+  });
+
+  it("[LVL-01] 「々」は前の字のくり返しとして扱う", () => {
+    expect(checkItem({ kanji: "喜", type: "read", text: "人々の{喜|よろこ}びの声。" })).toEqual({ errors: [], warnings: [] });
+  });
+});

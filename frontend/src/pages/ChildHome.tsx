@@ -108,6 +108,10 @@ export function ChildHome({ nickname, onSignOut }: { nickname: string; onSignOut
       <button type="button" className="secondary" onClick={onSignOut}>
         ログアウト
       </button>
+      {/* LVL-05: 使ったデータのクレジット */}
+      <footer className="credit">
+        漢字データ: KANJIDIC2（EDRDG、CC BY-SA 4.0）、KanjiVG（Ulrich Apel、CC BY-SA 3.0）、常用漢字一覧（ウィキペディア日本語版、CC BY-SA 4.0）
+      </footer>
     </main>
   );
 }
