@@ -11,6 +11,7 @@
 - 漢字の学年: KANJIDIC2（Electronic Dictionary Research and Development Group、CC BY-SA 4.0）https://www.edrdg.org/edrdg/licence.html
 - 筆順・筆跡の手本: KanjiVG（Ulrich Apel、CC BY-SA 3.0）https://kanjivg.tagaini.net/
 - 常用漢字表の音訓: ウィキペディア日本語版「常用漢字一覧」（CC BY-SA 4.0）https://ja.wikipedia.org/wiki/常用漢字一覧 。常用漢字表（平成22年内閣告示）を元にしたもの
+- 月例テストの PDF のフォント: Klee One（Fontworks、SIL Open Font License 1.1）https://github.com/fontworks-fonts/Klee 。テストに使う字だけを抜き出したもの（`scripts/build-test-font.mts`）
 
 ## 構成
 
@@ -62,3 +63,4 @@ npm run verify      # CI と同じ確認
 
 - コード: MIT
 - `shared/` の漢字データ（KANJIDIC2・KanjiVG・ウィキペディア「常用漢字一覧」から作ったもの）: 元データに合わせて CC BY-SA
+- `frontend/public/fonts/` のフォント: SIL Open Font License 1.1（`KleeOne-OFL.txt`）

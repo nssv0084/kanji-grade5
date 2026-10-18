@@ -37,6 +37,13 @@ describe("API", () => {
     expect(JSON.parse(res.body)).toEqual({ nickname: "はなこ", role: "child" });
   });
 
+  it("[NFR-04] 子どもは月例テストを作れない・見られない", async () => {
+    for (const route of ["GET /admin/tests", "POST /admin/tests"]) {
+      const res = (await handler(eventWith(child, route))) as { statusCode: number };
+      expect(res.statusCode).toBe(403);
+    }
+  });
+
   it("[NFR-04] 知らない経路は404で、内部の情報を出さない", async () => {
     const res = (await handler(eventWith(child, "GET /secret"))) as { statusCode: number; body: string };
     expect(res.statusCode).toBe(404);

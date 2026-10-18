@@ -42,23 +42,23 @@ interface ProfileRecord extends Streak {
   sk: string;
 }
 
-async function loadPlan(sub: string): Promise<Plan | undefined> {
+export async function loadPlan(sub: string): Promise<Plan | undefined> {
   const plans = await queryUserPrefix<PlanRecord>(sub, "PLAN#");
   return plans.sort((a, b) => b.schoolYear - a.schoolYear)[0];
 }
 
-async function loadKanji(sub: string): Promise<Record<string, KanjiState>> {
+export async function loadKanji(sub: string): Promise<Record<string, KanjiState>> {
   const rows = await queryUserPrefix<KanjiRecord>(sub, "KANJI#");
   return Object.fromEntries(rows.map((r) => [r.kanji, { learnedOn: r.learnedOn, writes: r.writes ?? [], lastAsked: r.lastAsked }]));
 }
 
-async function loadQuestions(sub: string): Promise<Record<string, QuestionState>> {
+export async function loadQuestions(sub: string): Promise<Record<string, QuestionState>> {
   const rows = await queryUserPrefix<QuestionRecord>(sub, "QS#");
   return Object.fromEntries(rows.map(({ pk: _pk, sk: _sk, itemId, ...s }) => [itemId, s]));
 }
 
 /** 出題できる問題（承認済みと、抜き取り確認中のもの） */
-async function loadItems(): Promise<StudyItem[]> {
+export async function loadItems(): Promise<StudyItem[]> {
   const rows: StudyItem[] = [];
   for (const type of ["write", "read"]) {
     for (const status of ["approved", "review"]) {

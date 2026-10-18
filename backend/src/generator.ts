@@ -1,10 +1,10 @@
 import { randomUUID } from "node:crypto";
-import { CognitoIdentityProviderClient, ListUsersInGroupCommand } from "@aws-sdk/client-cognito-identity-provider";
 import { overBudget } from "../../shared/generation/cost";
 import { AHEAD_DAYS, initialStatus, kanjiNeedingItems, passed, screen, toVerifyQuestions, type Candidate } from "../../shared/generation/pipeline";
 import { GENERATION_SYSTEM, GeneratedItems, generationPrompt, VERIFICATION_SYSTEM, Verification, verificationPrompt } from "../../shared/generation/prompts";
 import type { ItemType } from "../../shared/items/text";
 import { planOrder, type Plan } from "../../shared/study/plan";
+import { listChildren } from "./lib/children";
 import { askStructured } from "./lib/claude";
 import { getItem, putItem, queryAll, queryUserPrefix } from "./lib/db";
 import { itemsByStatus, parentApprovedCount, saveItem, type ItemRecord } from "./lib/items";
@@ -21,12 +21,8 @@ const RETRY_ROUNDS = 1;
 
 /** 子どもの学習計画から、習った字と、2週間先までの字を集める */
 async function childPlans(): Promise<{ order: string[]; learned: Set<string>; learnedCount: number }[]> {
-  const cognito = new CognitoIdentityProviderClient({});
-  const res = await cognito.send(new ListUsersInGroupCommand({ UserPoolId: process.env.USER_POOL_ID, GroupName: "children" }));
   const out = [];
-  for (const u of res.Users ?? []) {
-    const sub = u.Attributes?.find((a) => a.Name === "sub")?.Value;
-    if (!sub) continue;
+  for (const { sub } of await listChildren()) {
     const plans = await queryUserPrefix<Plan>(sub, "PLAN#");
     const plan = plans.sort((a, b) => b.schoolYear - a.schoolYear)[0];
     if (!plan) continue;
