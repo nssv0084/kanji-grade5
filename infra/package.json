@@ -8,7 +8,7 @@
     "synth": "cdk synth",
     "diff": "npm run check-account && cdk diff --all --profile eiken",
     "deploy": "npm run check-account && cdk deploy KanjiCert KanjiApp --profile eiken --require-approval broadening",
-    "deploy:ci": "cdk deploy KanjiCert KanjiApp --require-approval broadening --ci",
+    "deploy:ci": "cdk diff KanjiCert KanjiApp && cdk deploy KanjiCert KanjiApp --require-approval never --ci",
     "deploy:github": "npm run check-account && cdk deploy KanjiGithub --profile eiken",
     "test": "vitest run"
   },
