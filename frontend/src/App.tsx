@@ -5,6 +5,7 @@ import { api } from "./api";
 import { ChildHome } from "./pages/ChildHome";
 import { HandwritingLab } from "./pages/HandwritingLab";
 import { Login } from "./pages/Login";
+import { ParentHome } from "./pages/ParentHome";
 
 type AuthState = "loading" | "signedOut" | "signedIn";
 
@@ -27,7 +28,7 @@ export function App() {
   return <Home onSignOut={handleSignOut} />;
 }
 
-// 子どもは K-01 ホームへ。保護者の画面（ダッシュボード）はステップ6で作るため、今は手書き判定の試作への入口だけを置く
+// 子どもは K-01 ホーム、保護者は問題の作成と確認（P-06）。ダッシュボード全体はステップ6で作る
 function Home({ onSignOut }: { onSignOut: () => void }) {
   const [me, setMe] = useState<Me | null>(null);
   const [error, setError] = useState("");
@@ -41,25 +42,12 @@ function Home({ onSignOut }: { onSignOut: () => void }) {
 
   if (view === "lab") return <HandwritingLab onBack={() => setView("home")} />;
   if (me?.role === "child") return <ChildHome nickname={me.nickname} onSignOut={onSignOut} />;
+  if (me?.role === "parent") return <ParentHome nickname={me.nickname} onOpenLab={() => setView("lab")} onSignOut={onSignOut} />;
 
   return (
     <main className="page">
       <h1>漢字トレーニング</h1>
-      <section className="card stack">
-        {error && <p className="error">{error}</p>}
-        {!me && !error && <p className="muted">読み込み中…</p>}
-        {me && (
-          <p>
-            {me.nickname} さん、こんにちは（{me.role === "parent" ? "保護者" : "子ども"}）
-          </p>
-        )}
-        <button type="button" className="primary" onClick={() => setView("lab")}>
-          書き取りの練習（試作）
-        </button>
-        <button type="button" className="secondary" onClick={onSignOut}>
-          ログアウト
-        </button>
-      </section>
+      {error ? <p className="error">{error}</p> : <p className="muted">読み込み中…</p>}
     </main>
   );
 }
