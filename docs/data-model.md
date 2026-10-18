@@ -19,7 +19,7 @@
 | その日の学習 | `USER#{sub}` | `SESSION#{date}` | — | — | その日に新しく習った字（newKanji）、出題する問題と枠（slots: itemId と new・review・check）、解答（answers）、終わったか（done）。最初に開いたときに組み立てて固定する |
 | 写真の取り込み | `IMPORT#{importId}` | `META` | `IMPORTS` | `{createdAt}` | 種類（ドリル・教科書の漢字一覧）、写真の S3 キー、状態、読み取り結果（漢字・読み・熟語、または学習順）、確定日時 |
 | 学習計画 | `USER#{sub}` | `PLAN#{年度}` | — | — | 学習順（193字の並び）、月ごとの割り当て（各月の最初と最後の字の位置）、開始位置、1日の字数。教科書の順はここにだけ持ち、リポジトリには入れない（CUR-08） |
-| 月例テスト | `USER#{sub}` | `MTEST#{yyyy-mm}` | `MTESTS#{status}` | `{createdAt}` | 対象の月、出題した問題と並び、解答欄の位置（PDF 上の座標）、PDF・写真の S3 キー、状態、問題ごとの採点結果（読み取った字、判定、自信、保護者の修正）、点数 |
+| 月例テスト | `USER#{sub}` | `MTEST#{yyyy-mm}` | `MTESTS#{status}` | `{createdAt}` | 対象の月、題名、出題した問題と並び（PDF はこれから画面で作り直す）、写真の S3 キー、状態（created → 採点・確定は 5b で追加）、問題ごとの採点結果（読み取った字、判定、自信、保護者の修正）、点数 |
 | 申し立て | `APPEAL#{appealId}` | `META` | `APPEALS#{status}` | `{createdAt}` | 問題、手書きの画像の S3 キー、照合のスコア、保護者の判断 |
 | 問題の報告 | `REPORT#{reportId}` | `META` | `REPORTS#{status}` | `{createdAt}` | 問題、理由、コメント |
 | 生成ジョブ | `JOB#{jobId}` | `META` | `JOBS` | `{createdAt}` | きっかけ（trigger: scheduled・manual）、状態（running・done・failed・budget）、対象の漢字、作った数、除外した数、止まった理由（message）、開始・終了日時 |
@@ -50,7 +50,6 @@
 |---|---|---|
 | `imports/{importId}/` | ドリルの写真 | 30日で自動削除（PHO-01） |
 | `appeals/{appealId}.png` | 申し立てた手書きの画像 | 90日で自動削除 |
-| `tests/{yyyy-mm}/questions.pdf`・`answers.pdf` | 月例テストの PDF（問題用・正答つき） | 1年で自動削除 |
 | `tests/{yyyy-mm}/sheet-{n}.jpg` | 解答用紙の写真 | 30日で自動削除（TST-12） |
 
 - 非公開（パブリックアクセスをすべてブロック）。アップロード・表示は API が発行する署名付き URL（有効期限5分）で行う。

@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import { charsToWrite, parseText, targetOf } from "../../../shared/items/text";
 import type { AdminItem, AdminOverview, JobSummary } from "../../../shared/types";
 import { api } from "../api";
+import { MonthlyTests } from "../components/MonthlyTests";
 
 const JOB_STATUS: Record<JobSummary["status"], string> = { running: "作成中", done: "完了", failed: "失敗", budget: "予算で停止" };
 
@@ -112,6 +113,8 @@ export function ParentHome({ nickname, onOpenLab, onSignOut }: { nickname: strin
           )}
         </section>
       )}
+
+      <MonthlyTests />
 
       {review && (
         <section className="card stack">

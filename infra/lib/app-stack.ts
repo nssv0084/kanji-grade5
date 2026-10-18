@@ -165,6 +165,8 @@ export class AppStack extends Stack {
     table.grantReadWriteData(apiFn);
     // 保護者の「問題を作る」で生成を起動する
     generatorFn.grantInvoke(apiFn);
+    // 月例テストを作る子どもを選ぶため、子どもの一覧を読む（TST-03）
+    userPool.grant(apiFn, "cognito-idp:ListUsersInGroup");
 
     const httpApi = new apigw.HttpApi(this, "HttpApi", {
       corsPreflight: {

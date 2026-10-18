@@ -16,6 +16,7 @@ export const keys = {
   question: (sub: string, itemId: string) => ({ pk: `USER#${sub}`, sk: `QS#${itemId}` }),
   session: (sub: string, date: string) => ({ pk: `USER#${sub}`, sk: `SESSION#${date}` }),
   day: (sub: string, date: string) => ({ pk: `USER#${sub}`, sk: `DAY#${date}` }),
+  monthlyTest: (sub: string, month: string) => ({ pk: `USER#${sub}`, sk: `MTEST#${month}` }),
 };
 
 export async function getItem<T>(key: { pk: string; sk: string }): Promise<T | undefined> {

@@ -508,6 +508,22 @@ details summary {
   font-size: 0.9rem;
 }
 
+.notice {
+  margin: 0;
+  padding: 10px 12px;
+  border-radius: var(--radius-sm);
+  background: var(--primary-soft);
+  font-weight: 700;
+}
+
+.tests {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 12px;
+}
+
 .review-item {
   border-top: 1px solid var(--border);
   padding-top: 12px;

@@ -1,6 +1,7 @@
 // 画面と API で共通の型
 import type { ItemType } from "./items/text";
 import type { Mastery } from "./study/srs";
+import type { TestQuestion } from "./test/compose";
 
 /** 保護者（parents グループ）か子ども（children グループ） */
 export type Role = "parent" | "child";
@@ -82,6 +83,25 @@ export interface JobSummary {
   created: number;
   rejected: number;
   message?: string;
+}
+
+/** 月例テスト（P-11、TST-03〜06）。問題と並びを保存し、PDF はブラウザで作り直す */
+export interface MonthlyTest {
+  childId: string;
+  month: string;
+  title: string;
+  status: "created";
+  createdAt: string;
+  questions: TestQuestion[];
+}
+
+/** GET /admin/tests の応答 */
+export interface TestsResponse {
+  /** 今の学習日の月（yyyy-mm） */
+  month: string;
+  /** 月の最終週なら true（TST-03） */
+  reminder: boolean;
+  children: { childId: string; nickname: string; tests: MonthlyTest[] }[];
 }
 
 /** GET /admin/overview の応答（P-01 の一部、DSH-03、DSH-04） */
