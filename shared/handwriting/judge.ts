@@ -24,13 +24,17 @@ export interface Thresholds {
   rivalMargin: number;
 }
 
-// 仮の値。試作（ステップ1）の記録を見て決める
+// 2026-10-18 の試作の記録（子どもがスマホに指で書いた32件）で決めた値。
+// 誤って正解0件・正しいのに不正解0件のまま、あいまい（AI 判定行き）が最も少なくなる値に、最大のずれは少し余裕を持たせた
 export const DEFAULT_THRESHOLDS: Thresholds = {
-  correctMean: 0.1,
-  correctMax: 0.2,
+  correctMean: 0.14,
+  correctMax: 0.25,
   unsureScore: 0.16,
   rivalMargin: 0.01,
 };
+
+/** 字全体の大きさに対してこれより短い線は、うっかり触れた点とみなして捨てる（HWR-09） */
+const TAP_RATIO = 0.02;
 
 export interface StrokeMatch {
   /** 書いた画の番号（0から） */
@@ -190,7 +194,7 @@ export function compare(user: Stroke[], model: Stroke[]): Comparison {
 export function measure(strokes: Stroke[], target: string, models: Models): Measurement {
   const model = models.get(target);
   if (!model) throw new Error(`手本がありません: ${target}`);
-  const user = prepare(strokes.filter((s) => s.length > 0));
+  const user = prepare(dropTaps(strokes.filter((s) => s.length > 0)));
   const nearest = [...models]
     .filter(([char]) => char !== target)
     .map(([char, m]) => ({ char, score: compare(user, m).score }))
@@ -209,7 +213,26 @@ export function decide(m: Measurement, t: Thresholds): Verdict {
   }
   const rival = m.nearest[0];
   if (verdict === "correct" && rival && rival.score + t.rivalMargin < m.score) verdict = "unsure";
+  // 逆向きの画は、別の画を書いた（例: 横画をはらいで書いた）ことが多いため、形が近くても正解にしない（HWR-08）
+  if (verdict === "correct" && !m.directionOk) verdict = "unsure";
   return verdict;
+}
+
+function strokeLength(s: Stroke): number {
+  let len = 0;
+  for (let i = 1; i < s.length; i++) len += Math.hypot(s[i].x - s[i - 1].x, s[i].y - s[i - 1].y);
+  return len;
+}
+
+/** うっかり触れただけの点を捨てる。字全体が点だけのときは何もしない */
+export function dropTaps(strokes: Stroke[]): Stroke[] {
+  const all = strokes.flat();
+  if (all.length === 0) return strokes;
+  const xs = all.map((p) => p.x);
+  const ys = all.map((p) => p.y);
+  const size = Math.max(Math.max(...xs) - Math.min(...xs), Math.max(...ys) - Math.min(...ys));
+  const kept = strokes.filter((s) => strokeLength(s) >= size * TAP_RATIO);
+  return kept.length > 0 ? kept : strokes;
 }
 
 function transpose(a: number[][]): number[][] {

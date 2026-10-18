@@ -102,6 +102,22 @@ describe("手書きの判定", () => {
     expect(m.matches.find((x) => x.user === 1)?.reversed).toBe(true);
   });
 
+  it("[HWR-08] 逆向きの画があるときは、形が近くても正解にしない", () => {
+    const strokes = handwrite("招");
+    strokes[1] = [...strokes[1]].reverse();
+    const { m, verdict } = judge(strokes, "招");
+    expect(m.meanDistance).toBeLessThan(DEFAULT_THRESHOLDS.correctMean);
+    expect(verdict).toBe("unsure");
+  });
+
+  it("[HWR-09] うっかり触れただけの点は画として数えない", () => {
+    const strokes = handwrite("招");
+    strokes.unshift([{ x: 40, y: 20 }], [{ x: 70, y: 30 }, { x: 70.5, y: 30.2 }]);
+    const { m, verdict } = judge(strokes, "招");
+    expect(m.userCount).toBe(8);
+    expect(verdict).toBe("correct");
+  });
+
   it("形が近いほかの字を、近い順に返す", () => {
     const { m } = judge(handwrite("招"), "招");
     expect(m.nearest).toHaveLength(3);
