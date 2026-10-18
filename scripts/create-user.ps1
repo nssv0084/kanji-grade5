@@ -1,4 +1,4 @@
-# 保護者または子どものアカウントを作成する（管理画面ができるまでの間と、最初の保護者アカウント用）
+﻿# 保護者または子どものアカウントを作成する（管理画面ができるまでの間と、最初の保護者アカウント用）
 # 例: .\scripts\create-user.ps1 -Role parent -Username papa -Nickname "パパ" -TempPassword "Temp1234"
 #     .\scripts\create-user.ps1 -Role child -Username kanji01 -Nickname "はなこ" -TempPassword "Temp5678"
 param(
