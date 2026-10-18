@@ -33,7 +33,14 @@
 4. 請求のコンソールの「コスト配分タグ」で、ユーザー定義タグ `app` を有効にする（予算アラートは `app=kanji` の費用だけを見る。有効になるまで最大24時間）。
 5. 保護者アカウントを作る: `.\scripts\create-user.ps1 -Role parent -Username papa -Nickname "パパ" -TempPassword "Temp1234"`（子どもは `-Role child`）
 6. `https://kanji.ikehiroki.com` を開き、仮パスワードでログインして自分のパスワードを設定する。
-7. （ステップ4で）Anthropic の API キー（このアプリ専用のキー）を Secrets Manager の `kanji/anthropic-api-key` に登録する。
+7. Anthropic の API キー（このアプリ専用のキー）を Secrets Manager の `kanji/anthropic-api-key` に登録する（問題の自動生成に使う）。キーを画面や履歴に残さないよう、入力を伏せて渡す:
+   ```powershell
+   $s = Read-Host "Anthropic の API キー" -AsSecureString
+   $k = [Runtime.InteropServices.Marshal]::PtrToStringAuto([Runtime.InteropServices.Marshal]::SecureStringToBSTR($s))
+   aws secretsmanager put-secret-value --secret-id kanji/anthropic-api-key --secret-string $k --profile eiken --region ap-northeast-1
+   Remove-Variable k, s
+   ```
+   Claude Console で、このキーの月の利用上限も設定しておく（外側の安全策）。
 
 ### GitHub Actions からのデプロイ（初回のみ）
 

@@ -135,3 +135,21 @@ describe("GitHub 連携のスタック", () => {
     expect(JSON.stringify(statements[0].Resource)).toContain("role/cdk-");
   });
 });
+
+describe("問題の生成", () => {
+  it("[GEN-02] Anthropic の API キーは Secrets Manager に置き、値はテンプレートに書かない", () => {
+    appT.hasResourceProperties("AWS::SecretsManager::Secret", { Name: "kanji/anthropic-api-key" });
+    const secret = Object.values(appT.findResources("AWS::SecretsManager::Secret"))[0];
+    expect(secret.Properties.SecretString).toBeUndefined();
+  });
+
+  it("[GEN-08] 生成は毎日 日本時間の午前4時に動き、失敗しても自動で再実行しない（二重の課金を防ぐ）", () => {
+    appT.hasResourceProperties("AWS::Events::Rule", { ScheduleExpression: "cron(0 19 * * ? *)" });
+    appT.hasResourceProperties("AWS::Lambda::EventInvokeConfig", { MaximumRetryAttempts: 0 });
+    appT.hasResourceProperties("AWS::Lambda::Function", { Timeout: 900 });
+  });
+
+  it("[NFR-06] 生成の Lambda のエラーも通知する", () => {
+    appT.resourceCountIs("AWS::CloudWatch::Alarm", 2);
+  });
+});

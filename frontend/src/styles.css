@@ -500,3 +500,22 @@ details summary {
   background: var(--danger);
   color: #fff;
 }
+
+/* ---------- 保護者 ---------- */
+.jobs {
+  margin: 0;
+  padding-left: 1.2em;
+  font-size: 0.9rem;
+}
+
+.review-item {
+  border-top: 1px solid var(--border);
+  padding-top: 12px;
+  display: grid;
+  gap: 8px;
+}
+
+.item-preview {
+  margin: 0;
+  line-height: 1.9;
+}

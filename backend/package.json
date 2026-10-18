@@ -15,7 +15,11 @@
     "vitest": "^5.0.5"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.135.0",
     "@aws-sdk/client-dynamodb": "^3.1152.0",
-    "@aws-sdk/lib-dynamodb": "^3.1152.0"
+    "@aws-sdk/client-lambda": "^3.1152.0",
+    "@aws-sdk/client-secrets-manager": "^3.1152.0",
+    "@aws-sdk/lib-dynamodb": "^3.1152.0",
+    "zod": "^4.6.7"
   }
 }

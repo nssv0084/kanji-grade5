@@ -12,6 +12,8 @@ import * as cloudwatch from "aws-cdk-lib/aws-cloudwatch";
 import * as cwActions from "aws-cdk-lib/aws-cloudwatch-actions";
 import * as cognito from "aws-cdk-lib/aws-cognito";
 import * as dynamodb from "aws-cdk-lib/aws-dynamodb";
+import * as events from "aws-cdk-lib/aws-events";
+import * as eventTargets from "aws-cdk-lib/aws-events-targets";
 import * as lambda from "aws-cdk-lib/aws-lambda";
 import { NodejsFunction } from "aws-cdk-lib/aws-lambda-nodejs";
 import * as logs from "aws-cdk-lib/aws-logs";
@@ -19,6 +21,7 @@ import * as route53 from "aws-cdk-lib/aws-route53";
 import * as targets from "aws-cdk-lib/aws-route53-targets";
 import * as s3 from "aws-cdk-lib/aws-s3";
 import * as s3deploy from "aws-cdk-lib/aws-s3-deployment";
+import * as secretsmanager from "aws-cdk-lib/aws-secretsmanager";
 import * as sns from "aws-cdk-lib/aws-sns";
 import * as subs from "aws-cdk-lib/aws-sns-subscriptions";
 import type { Construct } from "constructs";
@@ -98,8 +101,7 @@ export class AppStack extends Stack {
       description: "子ども",
     });
 
-    // ---------- API ----------
-    const apiFn = new NodejsFunction(this, "ApiFn", {
+    const commonFnProps = {
       handler: "handler",
       runtime: lambda.Runtime.NODEJS_22_X,
       architecture: lambda.Architecture.ARM_64,
@@ -107,11 +109,52 @@ export class AppStack extends Stack {
       projectRoot: repoRoot,
       depsLockFilePath: path.join(repoRoot, "package-lock.json"),
       bundling: { minify: true, sourceMap: true, target: "node22" },
+    };
+
+    // ---------- 問題の生成（GEN） ----------
+    // 値は手動で登録する: aws secretsmanager put-secret-value --secret-id kanji/anthropic-api-key ...（英検アプリとは別のキー）
+    const anthropicSecret = new secretsmanager.Secret(this, "AnthropicApiKey", {
+      secretName: "kanji/anthropic-api-key",
+      description: "Anthropic API キー（漢字アプリの問題の生成と検証）",
+    });
+
+    const generatorFn = new NodejsFunction(this, "GeneratorFn", {
+      ...commonFnProps,
+      memorySize: 1024,
+      entry: path.join(repoRoot, "backend/src/generator.ts"),
+      timeout: Duration.minutes(15),
+      // 失敗時に自動で再実行すると二重に課金されるため、再試行しない
+      retryAttempts: 0,
+      environment: {
+        TABLE_NAME: table.tableName,
+        USER_POOL_ID: userPool.userPoolId,
+        ANTHROPIC_SECRET_ID: anthropicSecret.secretName,
+        NODE_OPTIONS: "--enable-source-maps",
+      },
+      logGroup: new logs.LogGroup(this, "GeneratorFnLogs", {
+        retention: logs.RetentionDays.ONE_MONTH,
+        removalPolicy: RemovalPolicy.DESTROY,
+      }),
+    });
+    table.grantReadWriteData(generatorFn);
+    anthropicSecret.grantRead(generatorFn);
+    userPool.grant(generatorFn, "cognito-idp:ListUsersInGroup");
+
+    // 毎日 日本時間の午前4時（UTC 19時）に、足りない問題を作る（GEN-08）
+    new events.Rule(this, "DailyGeneration", {
+      schedule: events.Schedule.cron({ minute: "0", hour: "19" }),
+      targets: [new eventTargets.LambdaFunction(generatorFn, { event: events.RuleTargetInput.fromObject({ trigger: "scheduled" }), retryAttempts: 0 })],
+    });
+
+    // ---------- API ----------
+    const apiFn = new NodejsFunction(this, "ApiFn", {
+      ...commonFnProps,
       entry: path.join(repoRoot, "backend/src/api.ts"),
       timeout: Duration.seconds(10),
       environment: {
         TABLE_NAME: table.tableName,
         USER_POOL_ID: userPool.userPoolId,
+        GENERATOR_FN_NAME: generatorFn.functionName,
         NODE_OPTIONS: "--enable-source-maps",
       },
       logGroup: new logs.LogGroup(this, "ApiFnLogs", {
@@ -120,6 +163,8 @@ export class AppStack extends Stack {
       }),
     });
     table.grantReadWriteData(apiFn);
+    // 保護者の「問題を作る」で生成を起動する
+    generatorFn.grantInvoke(apiFn);
 
     const httpApi = new apigw.HttpApi(this, "HttpApi", {
       corsPreflight: {
@@ -213,6 +258,14 @@ export class AppStack extends Stack {
         alarmDescription: "漢字アプリの API の Lambda でエラーが発生しました",
       }).addAlarmAction(new cwActions.SnsAction(topic));
 
+      new cloudwatch.Alarm(this, "GeneratorErrors", {
+        metric: generatorFn.metricErrors({ period: Duration.minutes(5) }),
+        threshold: 1,
+        evaluationPeriods: 1,
+        treatMissingData: cloudwatch.TreatMissingData.NOT_BREACHING,
+        alarmDescription: "漢字アプリの問題生成の Lambda でエラーが発生しました",
+      }).addAlarmAction(new cwActions.SnsAction(topic));
+
       // 英検アプリと同じアカウントのため、アカウント全体ではなくこのアプリのリソースに付けたタグで絞る
       new budgets.CfnBudget(this, "MonthlyBudget", {
         budget: {
@@ -242,5 +295,6 @@ export class AppStack extends Stack {
     new CfnOutput(this, "UserPoolId", { value: userPool.userPoolId });
     new CfnOutput(this, "UserPoolClientId", { value: userPoolClient.userPoolClientId });
     new CfnOutput(this, "TableName", { value: table.tableName });
+    new CfnOutput(this, "AnthropicSecretName", { value: anthropicSecret.secretName });
   }
 }

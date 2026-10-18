@@ -59,3 +59,34 @@ export interface KanjiMapEntry {
   kanji: string;
   mastery: Mastery;
 }
+
+/** 保護者が見る問題（P-05、P-06） */
+export interface AdminItem {
+  itemId: string;
+  kanji: string;
+  type: ItemType;
+  text: string;
+  status: ItemStatus;
+  source: string;
+  createdAt: string;
+}
+
+/** 生成ジョブ（P-06、GEN-08） */
+export interface JobSummary {
+  jobId: string;
+  status: "running" | "done" | "failed" | "budget";
+  trigger: "scheduled" | "manual";
+  createdAt: string;
+  finishedAt?: string;
+  kanji: string[];
+  created: number;
+  rejected: number;
+  message?: string;
+}
+
+/** GET /admin/overview の応答（P-01 の一部、DSH-03、DSH-04） */
+export interface AdminOverview {
+  usage: { spentMicroUsd: number; budgetMicroUsd: number; stopRatio: number; usdJpy: number };
+  reviewCount: number;
+  jobs: JobSummary[];
+}

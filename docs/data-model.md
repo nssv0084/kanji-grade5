@@ -10,7 +10,7 @@
 
 | エンティティ | pk | sk | gsi1pk | gsi1sk | 内容 |
 |---|---|---|---|---|---|
-| 問題（Item） | `ITEM#{itemId}` | `META` | `ITEMS#{type}#{status}` | `{kanji}#{createdAt}` | 対象の漢字、問題文、答え、選択肢、元の写真、生成情報 |
+| 問題（Item） | `ITEM#{itemId}` | `META` | `ITEMS#{type}#{status}` | `{kanji}#{createdAt}` | 対象の漢字（kanji）、形式（type: write・read）、問題文（text: {漢字|よみ} の形）、状態（status）、作成元（source: ai、または保護者が確認して登録したときの説明）、生成に使ったモデル（model）、保護者が承認したか（approvedBy: parent）、確認日時（reviewedAt）、作成日時 |
 | ユーザー | `USER#{sub}` | `PROFILE` | — | — | 連続学習日数（days）と最後に学習した日（lastStudyDate）。ニックネームは Cognito に持つ |
 | 習った漢字・定着度 | `USER#{sub}` | `KANJI#{kanji}` | — | — | 習った日、定着度、形式別の解答数・正答数、直近の結果、最後に出題した日 |
 | 日別の学習量 | `USER#{sub}` | `DAY#{date}` | — | — | 日別の解答数・正答数（形式別） |
@@ -22,11 +22,11 @@
 | 月例テスト | `USER#{sub}` | `MTEST#{yyyy-mm}` | `MTESTS#{status}` | `{createdAt}` | 対象の月、出題した問題と並び、解答欄の位置（PDF 上の座標）、PDF・写真の S3 キー、状態、問題ごとの採点結果（読み取った字、判定、自信、保護者の修正）、点数 |
 | 申し立て | `APPEAL#{appealId}` | `META` | `APPEALS#{status}` | `{createdAt}` | 問題、手書きの画像の S3 キー、照合のスコア、保護者の判断 |
 | 問題の報告 | `REPORT#{reportId}` | `META` | `REPORTS#{status}` | `{createdAt}` | 問題、理由、コメント |
-| 生成ジョブ | `JOB#{jobId}` | `META` | `JOBS` | `{createdAt}` | 種類（読み取り・生成）、対象の漢字、状態、作れた数、費用 |
+| 生成ジョブ | `JOB#{jobId}` | `META` | `JOBS` | `{createdAt}` | きっかけ（trigger: scheduled・manual）、状態（running・done・failed・budget）、対象の漢字、作った数、除外した数、止まった理由（message）、開始・終了日時 |
 | 保護者の承認数 | `STATS` | `APPROVED#{type}` | — | — | 確認の進み具合（LVL-04） |
 | API 使用額 | `USAGE` | `TOTAL#{yyyy-mm}` | — | — | 月ごとの累計費用（マイクロドル単位の整数） |
-| API 使用記録 | `USAGE` | `LOG#{timestamp}` | — | — | 用途、モデル、トークン数、費用 |
-| 設定 | `SETTINGS` | `GLOBAL` | — | — | 予算、用途別のモデル、問題数、上限、アラート日数 |
+| API 使用記録 | `USAGE` | `LOG#{timestamp}` | — | — | 用途（purpose: generate:字・verify:字）、実際に応答したモデル、入力・出力・キャッシュ読み込みのトークン数、費用（マイクロドル） |
+| 設定 | `SETTINGS` | `GLOBAL` | — | — | 月の予算（monthlyBudgetYen）、為替レート（usdJpy）、生成・検証のモデル（generationModel、verificationModel）。記録がなければ初期値（shared/generation/cost.ts）を使う。問題数・アラート日数などは設定画面（P-09）で足す |
 
 ## 主な読み方
 
