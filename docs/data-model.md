@@ -18,7 +18,9 @@
 | 問題ごとの状態 | `USER#{sub}` | `QS#{itemId}` | `REVIEW#{sub}`（復習中のみ） | `{nextReviewDate}` | 解答回数、連続正解数、復習の予定日 |
 | その日の学習 | `USER#{sub}` | `SESSION#{date}` | — | — | その日のセット構成と、どこまで解いたか |
 | まとめテスト | `USER#{sub}` | `TEST#{timestamp}` | — | — | 出題した問題、解答、得点 |
-| 写真の取り込み | `IMPORT#{importId}` | `META` | `IMPORTS` | `{createdAt}` | 写真の S3 キー、状態、読み取り結果（漢字・読み・熟語）、確定日時 |
+| 写真の取り込み | `IMPORT#{importId}` | `META` | `IMPORTS` | `{createdAt}` | 種類（ドリル・教科書の漢字一覧）、写真の S3 キー、状態、読み取り結果（漢字・読み・熟語、または学習順）、確定日時 |
+| 学習計画 | `USER#{sub}` | `PLAN#{年度}` | — | — | 学習順（193字の並び）、月ごとの割り当て（各月の最初と最後の字の位置）、開始位置、1日の字数。教科書の順はここにだけ持ち、リポジトリには入れない（CUR-08） |
+| 月例テスト | `USER#{sub}` | `MTEST#{yyyy-mm}` | `MTESTS#{status}` | `{createdAt}` | 対象の月、出題した問題と並び、解答欄の位置（PDF 上の座標）、PDF・写真の S3 キー、状態、問題ごとの採点結果（読み取った字、判定、自信、保護者の修正）、点数 |
 | 申し立て | `APPEAL#{appealId}` | `META` | `APPEALS#{status}` | `{createdAt}` | 問題、手書きの画像の S3 キー、照合のスコア、保護者の判断 |
 | 問題の報告 | `REPORT#{reportId}` | `META` | `REPORTS#{status}` | `{createdAt}` | 問題、理由、コメント |
 | 生成ジョブ | `JOB#{jobId}` | `META` | `JOBS` | `{createdAt}` | 種類（読み取り・生成）、対象の漢字、状態、作れた数、費用 |
@@ -36,6 +38,8 @@
 | 習った漢字と定着度（漢字マップ） | `USER#{sub}` を `begins_with(sk, "KANJI#")` で Query（最大193件） |
 | 今日の復習 | GSI `REVIEW#{sub}` を `gsi1sk <= 今日` で Query |
 | 確認待ち | GSI `ITEMS#{type}#review`、`APPEALS#open`、`REPORTS#open`、`IMPORTS` を Query |
+| 採点の確認待ちの月例テスト | GSI `MTESTS#graded` を Query |
+| 今月の新しい漢字 | `USER#{sub}` の `PLAN#{年度}` を GetItem し、`KANJI#` の習った日と突き合わせる |
 
 ## 問題の状態（status）
 
@@ -47,6 +51,8 @@
 |---|---|---|
 | `imports/{importId}/` | ドリルの写真 | 30日で自動削除（PHO-01） |
 | `appeals/{appealId}.png` | 申し立てた手書きの画像 | 90日で自動削除 |
+| `tests/{yyyy-mm}/questions.pdf`・`answers.pdf` | 月例テストの PDF（問題用・正答つき） | 1年で自動削除 |
+| `tests/{yyyy-mm}/sheet-{n}.jpg` | 解答用紙の写真 | 30日で自動削除（TST-12） |
 
 - 非公開（パブリックアクセスをすべてブロック）。アップロード・表示は API が発行する署名付き URL（有効期限5分）で行う。
 
