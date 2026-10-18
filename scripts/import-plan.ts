@@ -9,8 +9,8 @@ import { arg, checkAccount, documentClient, stackOutput, userSub } from "./aws";
 // 使い方: npx tsx scripts/import-plan.ts --file samples/drill-order.json --child <ログインID> --year 2026
 // 学習順はリポジトリに入れない。開始位置より前の字は「習った字」にする（CUR-12）
 
-const file = arg("file");
-const child = arg("child");
+const file = arg("file") ?? "";
+const child = arg("child") ?? "";
 const year = Number(arg("year"));
 if (!file || !child || !year) {
   console.error("使い方: npx tsx scripts/import-plan.ts --file <学習順.json> --child <ログインID> --year <年度>");
@@ -33,28 +33,36 @@ if (order.length !== GRADE5_CHARS.length || missing.length > 0 || new Set(order)
   process.exit(1);
 }
 
-checkAccount();
-const table = stackOutput("TableName");
-const sub = userSub(child);
-const ddb = documentClient();
-
-await ddb.send(new PutCommand({ TableName: table, Item: { pk: `USER#${sub}`, sk: `PLAN#${year}`, ...plan } }));
-console.log(`学習計画を登録しました（${year}年度、${plan.startIndex + 1}字目から、${today} 開始）`);
-
-// 開始位置より前の字は「習った字」にする。すでに記録がある字は上書きしない
-let learned = 0;
-for (const k of order.slice(0, plan.startIndex)) {
-  try {
-    await ddb.send(
-      new PutCommand({
-        TableName: table,
-        Item: { pk: `USER#${sub}`, sk: `KANJI#${k}`, kanji: k, learnedOn: `${year}-09-30`, writes: [] },
-        ConditionExpression: "attribute_not_exists(pk)",
-      }),
-    );
-    learned++;
-  } catch (e) {
-    if ((e as Error).name !== "ConditionalCheckFailedException") throw e;
+// 最上位の await は使えない（ルートの package.json が CommonJS のため）ので、関数にまとめる
+async function main() {
+  checkAccount();
+  const table = stackOutput("TableName");
+  const sub = userSub(child);
+  const ddb = documentClient();
+  
+  await ddb.send(new PutCommand({ TableName: table, Item: { pk: `USER#${sub}`, sk: `PLAN#${year}`, ...plan } }));
+  console.log(`学習計画を登録しました（${year}年度、${plan.startIndex + 1}字目から、${today} 開始）`);
+  
+  // 開始位置より前の字は「習った字」にする。すでに記録がある字は上書きしない
+  let learned = 0;
+  for (const k of order.slice(0, plan.startIndex)) {
+    try {
+      await ddb.send(
+        new PutCommand({
+          TableName: table,
+          Item: { pk: `USER#${sub}`, sk: `KANJI#${k}`, kanji: k, learnedOn: `${year}-09-30`, writes: [] },
+          ConditionExpression: "attribute_not_exists(pk)",
+        }),
+      );
+      learned++;
+    } catch (e) {
+      if ((e as Error).name !== "ConditionalCheckFailedException") throw e;
+    }
   }
+  console.log(`習った字として ${learned} 字を登録しました（すでにあった字はそのまま）`);
 }
-console.log(`習った字として ${learned} 字を登録しました（すでにあった字はそのまま）`);
+
+main().catch((e) => {
+  console.error(e);
+  process.exit(1);
+});
