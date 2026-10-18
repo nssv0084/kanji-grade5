@@ -50,9 +50,12 @@ export function kanjiNeedingItems(args: {
   aheadCount: number;
   counts: Record<string, Partial<Record<ItemType, number>>>;
   limit: number;
+  /** 続けて1問も作れなかった回数（GEN-10） */
+  misses?: Record<string, number>;
 }): { kanji: string; write: number; read: number }[] {
   const out: { kanji: string; write: number; read: number }[] = [];
   for (const k of args.order.slice(0, args.learnedCount + args.aheadCount)) {
+    if ((args.misses?.[k] ?? 0) >= GIVE_UP_AFTER) continue;
     const write = Math.max(0, TARGET_PER_KANJI.write - (args.counts[k]?.write ?? 0));
     const read = Math.max(0, TARGET_PER_KANJI.read - (args.counts[k]?.read ?? 0));
     if (write + read > 0) out.push({ kanji: k, write, read });
@@ -60,6 +63,9 @@ export function kanjiNeedingItems(args: {
   }
   return out;
 }
+
+/** 続けてこの回数だけ1問も作れなかった字は、目標数に届かなくても作るのをやめる（GEN-10） */
+export const GIVE_UP_AFTER = 2;
 
 /** 2週間先までに習う予定の字数（1日1字の目安） */
 export const AHEAD_DAYS = 14;

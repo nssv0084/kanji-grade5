@@ -124,3 +124,10 @@ describe("問う語の重なり", () => {
     expect(p).toContain("訓読み: なし");
   });
 });
+
+describe("作れない字", () => {
+  it("[GEN-10] 続けて2回1問も作れなかった字は、目標数に届かなくても作るのをやめる", () => {
+    const need = kanjiNeedingItems({ order: [..."ABC"], learnedCount: 3, aheadCount: 0, counts: {}, limit: 10, misses: { A: 2, B: 1 } });
+    expect(need.map((n) => n.kanji)).toEqual(["B", "C"]);
+  });
+});

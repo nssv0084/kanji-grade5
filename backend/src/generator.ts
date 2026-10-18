@@ -6,7 +6,7 @@ import { GENERATION_SYSTEM, GeneratedItems, generationPrompt, VERIFICATION_SYSTE
 import type { ItemType } from "../../shared/items/text";
 import { planOrder, type Plan } from "../../shared/study/plan";
 import { askStructured } from "./lib/claude";
-import { getItem, putItem, queryUserPrefix } from "./lib/db";
+import { getItem, putItem, queryAll, queryUserPrefix } from "./lib/db";
 import { itemsByStatus, parentApprovedCount, saveItem, type ItemRecord } from "./lib/items";
 import { jobKey, newJob, type JobRecord } from "./lib/jobs";
 import { getSettings, monthSpent } from "./lib/usage";
@@ -71,7 +71,10 @@ async function run(job: JobRecord): Promise<void> {
 
   // 子どもが複数いても同じ字は1回だけ。習った字のうち一番多く進んでいる子どもに合わせる
   const child = children.sort((a, b) => b.learnedCount - a.learnedCount)[0];
-  const needs = kanjiNeedingItems({ order: child.order, learnedCount: child.learnedCount, aheadCount: AHEAD_DAYS, counts, limit: MAX_KANJI_PER_RUN });
+  // 続けて1問も作れなかった回数（GEN-10）。使える語が少ない字で、毎日作り直しが続かないようにする
+  const missRows = await queryAll<{ sk: string; misses: number }>({ KeyConditionExpression: "pk = :p", ExpressionAttributeValues: { ":p": "GENSTAT" } });
+  const misses = Object.fromEntries(missRows.map((r) => [r.sk, r.misses]));
+  const needs = kanjiNeedingItems({ order: child.order, learnedCount: child.learnedCount, aheadCount: AHEAD_DAYS, counts, limit: MAX_KANJI_PER_RUN, misses });
   job.kanji = needs.map((n) => n.kanji);
   await putItem({ ...job });
 
@@ -120,6 +123,11 @@ async function run(job: JobRecord): Promise<void> {
       }
       await putItem({ ...job });
     }
+
+    const made = need.write + need.read - (remaining.write + remaining.read);
+    const nextMisses = made === 0 ? (misses[need.kanji] ?? 0) + 1 : 0;
+    if (nextMisses !== (misses[need.kanji] ?? 0)) await putItem({ pk: "GENSTAT", sk: need.kanji, misses: nextMisses });
+    if (made === 0) console.log(`「${need.kanji}」は1問も作れなかった（続けて ${nextMisses} 回）`);
   }
 }
 
