@@ -24,6 +24,7 @@
 | 問題の報告 | `REPORT#{reportId}` | `META` | `REPORTS#{status}` | `{createdAt}` | 問題、理由、コメント |
 | 生成ジョブ | `JOB#{jobId}` | `META` | `JOBS` | `{createdAt}` | きっかけ（trigger: scheduled・manual）、状態（running・done・failed・budget）、対象の漢字、作った数、除外した数、止まった理由（message）、開始・終了日時 |
 | 保護者の承認数 | `STATS` | `APPROVED#{type}` | — | — | 確認の進み具合（LVL-04） |
+| 生成できなかった回数 | `GENSTAT` | `{kanji}` | — | — | 続けて1問も作れなかった回数（misses）。2回で、その字の生成をやめる（GEN-10） |
 | API 使用額 | `USAGE` | `TOTAL#{yyyy-mm}` | — | — | 月ごとの累計費用（マイクロドル単位の整数） |
 | API 使用記録 | `USAGE` | `LOG#{timestamp}` | — | — | 用途（purpose: generate:字・verify:字）、実際に応答したモデル、入力・出力・キャッシュ読み込みのトークン数、費用（マイクロドル） |
 | 設定 | `SETTINGS` | `GLOBAL` | — | — | 月の予算（monthlyBudgetYen）、為替レート（usdJpy）、生成・検証のモデル（generationModel、verificationModel）。記録がなければ初期値（shared/generation/cost.ts）を使う。問題数・アラート日数などは設定画面（P-09）で足す |
