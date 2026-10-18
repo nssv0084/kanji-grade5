@@ -12,6 +12,7 @@ export function ChildHome({ nickname, onSignOut }: { nickname: string; onSignOut
   const [today, setToday] = useState<TodayResponse | null>(null);
   const [error, setError] = useState("");
   const [view, setView] = useState<"home" | "practice" | "map">("home");
+  const [celebrated, setCelebrated] = useState(false);
 
   const load = useCallback(() => {
     setError("");
@@ -55,7 +56,18 @@ export function ChildHome({ nickname, onSignOut }: { nickname: string; onSignOut
       )}
       {!today && !error && <p className="muted">読み込み中…</p>}
 
-      {today?.needsPlan && <p className="card">おうちの人に学習計画を登録してもらおう。</p>}
+      {today?.celebrate && !celebrated && (
+        <section className="card stack celebrate" role="status">
+          <p className="celebrate-title">おめでとう！</p>
+          <p className="big">覚えた字が {today.celebrate} 字になったよ。</p>
+          <p>この調子で続けよう。</p>
+          <button type="button" className="primary" onClick={() => setCelebrated(true)}>
+            やったね
+          </button>
+        </section>
+      )}
+
+      {today?.needsPlan &&<p className="card">おうちの人に学習計画を登録してもらおう。</p>}
 
       {today && !today.needsPlan && (
         <>

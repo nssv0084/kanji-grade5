@@ -41,6 +41,8 @@ export interface TodayResponse {
   learnedCount: number;
   masteredCount: number;
   total: number;
+  /** 「覚えた」の字数が新しく10字の区切りを超えたら、その字数（STK-04）。1回だけ返す */
+  celebrate?: number;
 }
 
 /** POST /answers の要求 */
