@@ -20,6 +20,18 @@ export function markStudied(s: Streak, today: string): Streak {
   return { days: continued ? s.days + 1 : 1, lastStudyDate: today };
 }
 
+/** お祝いの区切り（STK-04） */
+export const CELEBRATE_EVERY = 10;
+
+/**
+ * 「覚えた」の字数がまだお祝いしていない区切りに届いたら、その区切りを返す（STK-04）。
+ * 苦手に戻って字数が減り、また増えたときは、同じ区切りを二度お祝いしない
+ */
+export function milestoneToCelebrate(mastered: number, celebrated = 0): number | undefined {
+  const milestone = Math.floor(mastered / CELEBRATE_EVERY) * CELEBRATE_EVERY;
+  return milestone > celebrated ? milestone : undefined;
+}
+
 /** 表示用。昨日も今日も学習していなければ0に戻す */
 export function currentStreak(s: Streak, today: string): number {
   if (!s.lastStudyDate) return 0;

@@ -5,10 +5,11 @@ import { studyDate } from "../../shared/study/dates";
 import { newKanjiForDay, planOrder, type Plan } from "../../shared/study/plan";
 import { buildSession, siblingForReview, toSets, type KanjiState, type Slot, type StudyItem } from "../../shared/study/session";
 import { mastery, nextQuestionState, type QuestionState } from "../../shared/study/srs";
-import { currentStreak, isStudyDay, markStudied, type Streak } from "../../shared/study/streak";
+import { currentStreak, isStudyDay, markStudied, milestoneToCelebrate, type Streak } from "../../shared/study/streak";
 import type { AnswerRequest, AnswerResponse, KanjiMapEntry, PracticeQuestion, TodayResponse } from "../../shared/types";
 import type { Caller } from "./lib/auth";
-import { getItem, keys, putItem, queryAll, queryUserPrefix } from "./lib/db";
+import { UpdateCommand } from "@aws-sdk/lib-dynamodb";
+import { ddb, getItem, keys, putItem, queryAll, queryUserPrefix, TABLE_NAME } from "./lib/db";
 import { HttpError, parseBody } from "./lib/http";
 
 // 子どもの毎日の練習（CUR、REV、MAP、STK）。判断はすべて shared/study の関数で行い、ここでは読み書きだけをする
@@ -41,6 +42,22 @@ interface SessionRecord {
 interface ProfileRecord extends Streak {
   pk: string;
   sk: string;
+  /** お祝いした「覚えた」の字数の区切り（STK-04） */
+  celebrated?: number;
+}
+
+/** プロフィールの一部だけを書き換える（連続日数とお祝いの記録を互いに消さないため） */
+async function updateProfile(sub: string, fields: Partial<Omit<ProfileRecord, "pk" | "sk">>): Promise<void> {
+  const names = Object.keys(fields);
+  await ddb.send(
+    new UpdateCommand({
+      TableName: TABLE_NAME,
+      Key: keys.profile(sub),
+      UpdateExpression: `SET ${names.map((n, i) => `#k${i} = :v${i}`).join(", ")}`,
+      ExpressionAttributeNames: Object.fromEntries(names.map((n, i) => [`#k${i}`, n])),
+      ExpressionAttributeValues: Object.fromEntries(names.map((n, i) => [`:v${i}`, fields[n as keyof typeof fields]])),
+    }),
+  );
 }
 
 export async function loadPlan(sub: string): Promise<Plan | undefined> {
@@ -82,7 +99,7 @@ async function saveKanji(sub: string, k: string, s: KanjiState) {
 export async function getToday(caller: Caller, now = new Date()): Promise<TodayResponse> {
   const date = studyDate(now);
   const plan = await loadPlan(caller.sub);
-  const profile = (await getItem<ProfileRecord>(keys.profile(caller.sub))) ?? { days: 0 };
+  const profile: Partial<ProfileRecord> & Streak = (await getItem<ProfileRecord>(keys.profile(caller.sub))) ?? { days: 0 };
   const empty = { date, newKanji: [], sets: [], streak: currentStreak(profile, date), learnedCount: 0, masteredCount: 0, total: GRADE5_CHARS.length };
   if (!plan) return { ...empty, needsPlan: true };
 
@@ -112,6 +129,9 @@ export async function getToday(caller: Caller, now = new Date()): Promise<TodayR
   });
 
   const masteredCount = Object.values(kanji).filter((s) => mastery(!!s.learnedOn, s.writes) === "mastered").length;
+  // お祝いは1回だけ出す（STK-04）
+  const celebrate = milestoneToCelebrate(masteredCount, profile.celebrated);
+  if (celebrate) await updateProfile(caller.sub, { celebrated: celebrate });
   return {
     ...empty,
     needsPlan: false,
@@ -119,6 +139,7 @@ export async function getToday(caller: Caller, now = new Date()): Promise<TodayR
     sets: toSets(questions),
     learnedCount: learnedCount(plan, kanji),
     masteredCount,
+    celebrate,
   };
 }
 
@@ -182,7 +203,7 @@ export async function submitAnswer(caller: Caller, event: APIGatewayProxyEventV2
   let profile: Streak = (await getItem<ProfileRecord>(keys.profile(caller.sub))) ?? { days: 0 };
   if (isStudyDay(day.answers, session.done && session.date === today)) {
     profile = markStudied(profile, today);
-    await putItem({ ...keys.profile(caller.sub), days: profile.days, lastStudyDate: profile.lastStudyDate });
+    await updateProfile(caller.sub, { days: profile.days, lastStudyDate: profile.lastStudyDate });
   }
   return { streak: currentStreak(profile, today), done: session.done };
 }

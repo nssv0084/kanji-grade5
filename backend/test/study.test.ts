@@ -3,7 +3,7 @@ import { addDays, studyDate } from "../../shared/study/dates";
 import { behindBy, monthTarget, newKanjiForDay, periodOn, type Plan } from "../../shared/study/plan";
 import { buildSession, isEligible, SESSION_LIMIT, siblingForReview, toSets, type KanjiState, type StudyItem } from "../../shared/study/session";
 import { mastery, needsCheck, nextQuestionState } from "../../shared/study/srs";
-import { currentStreak, isStudyDay, markStudied } from "../../shared/study/streak";
+import { currentStreak, isStudyDay, markStudied, milestoneToCelebrate } from "../../shared/study/streak";
 
 // テスト用の学習順。上巻 4回×5字=20字、下巻 5回×4字=20字（本物の学習順はリポジトリに入れない）
 const G5 = "像厚経賞情状象絶喜適解許容可技複術構復桜眼銅破修停易祖際準潔備貿質識報告属確因現造";
@@ -163,6 +163,18 @@ describe("今日の練習", () => {
 });
 
 describe("連続学習日数", () => {
+  it("[STK-04] 「覚えた」の字数が10字の区切りに届いたら、1回だけお祝いする", () => {
+    expect(milestoneToCelebrate(9)).toBeUndefined();
+    expect(milestoneToCelebrate(10)).toBe(10);
+    expect(milestoneToCelebrate(13, 10)).toBeUndefined();
+    expect(milestoneToCelebrate(20, 10)).toBe(20);
+    // 苦手に戻って減ってから、また同じ区切りに届いてもお祝いしない
+    expect(milestoneToCelebrate(19, 20)).toBeUndefined();
+    expect(milestoneToCelebrate(20, 20)).toBeUndefined();
+    // 一度に区切りを2つ超えたら、大きい方だけ
+    expect(milestoneToCelebrate(31, 10)).toBe(30);
+  });
+
   it("[STK-01] 今日の練習を終えた日か、10問以上解いた日を学習した日として数える", () => {
     expect(isStudyDay(9, false)).toBe(false);
     expect(isStudyDay(10, false)).toBe(true);

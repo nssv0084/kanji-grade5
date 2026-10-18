@@ -556,6 +556,19 @@ details summary {
   letter-spacing: 0.2em;
 }
 
+.celebrate {
+  text-align: center;
+  background: linear-gradient(135deg, #fff4e8, #eef3ff);
+  border: 2px solid var(--accent);
+}
+
+.celebrate-title {
+  margin: 0;
+  font-size: 1.8rem;
+  font-weight: 800;
+  color: var(--accent);
+}
+
 .alert {
   margin: 0;
   padding: 10px 12px;
