@@ -38,6 +38,7 @@
 | 今日の練習の組み立て | `USER#{sub}` を `begins_with(sk, "QS#")` と `"KANJI#"` で Query し、出題できる問題（GSI `ITEMS#{type}#approved`・`#review`）と合わせて shared/study/session.ts で選ぶ（1人分で最大 約2,100件のため、復習用の GSI は持たない） |
 | 確認待ち | GSI `ITEMS#{type}#review`、`APPEALS#open`、`REPORTS#open`、`IMPORTS` を Query |
 | 採点の確認待ちの月例テスト | GSI `MTESTS#graded` を Query |
+| 保護者のダッシュボード | 子どもごとに `PLAN#`・`KANJI#`・`PROFILE` と、`DAY#{7日前}`〜`DAY#{今日}` を `BETWEEN` で Query し、shared/study/dashboard.ts で集計する |
 | 今月の新しい漢字 | `USER#{sub}` の `PLAN#{年度}` を GetItem し、`KANJI#` の習った日と突き合わせる |
 
 ## 問題の状態（status）

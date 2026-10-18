@@ -1,5 +1,6 @@
 import type { APIGatewayProxyEventV2WithJWTAuthorizer } from "aws-lambda";
 import { GRADE5_CHARS } from "../../shared/kanji";
+import { learnedCount } from "../../shared/study/dashboard";
 import { studyDate } from "../../shared/study/dates";
 import { newKanjiForDay, planOrder, type Plan } from "../../shared/study/plan";
 import { buildSession, siblingForReview, toSets, type KanjiState, type Slot, type StudyItem } from "../../shared/study/session";
@@ -72,12 +73,6 @@ export async function loadItems(): Promise<StudyItem[]> {
     }
   }
   return rows.map(({ itemId, kanji, type, text }) => ({ itemId, kanji, type, text }));
-}
-
-function learnedCount(plan: Plan, kanji: Record<string, KanjiState>): number {
-  const order = planOrder(plan);
-  const i = order.findIndex((k) => !kanji[k]?.learnedOn);
-  return i === -1 ? order.length : i;
 }
 
 async function saveKanji(sub: string, k: string, s: KanjiState) {
