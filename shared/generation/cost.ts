@@ -35,6 +35,8 @@ export interface Settings {
   /** 生成・検証に使うモデル（設定画面で変える。コードに固定しない） */
   generationModel: string;
   verificationModel: string;
+  /** 月例テストの解答用紙の読み取り（TST-08） */
+  gradingModel: string;
   /** 月の予算（円）と、計算に使う為替レート */
   monthlyBudgetYen: number;
   usdJpy: number;
@@ -43,6 +45,7 @@ export interface Settings {
 export const DEFAULT_SETTINGS: Settings = {
   generationModel: "claude-opus-5-5",
   verificationModel: "claude-opus-5-5",
+  gradingModel: "claude-opus-5-5",
   monthlyBudgetYen: 1500,
   usdJpy: 150,
 };
@@ -56,4 +59,9 @@ export function budgetMicroUsd(s: Settings): number {
 
 export function overBudget(spentMicroUsd: number, s: Settings): boolean {
   return spentMicroUsd >= budgetMicroUsd(s) * STOP_RATIO;
+}
+
+/** 月例テストの採点は月1回で少額のため、予算の100%まで止めない（COST-01） */
+export function gradingOverBudget(spentMicroUsd: number, s: Settings): boolean {
+  return spentMicroUsd >= budgetMicroUsd(s);
 }

@@ -30,19 +30,25 @@ export async function askStructured<T>(args: {
   schema: z.ZodType<T>;
   purpose: string;
   effort?: "low" | "medium" | "high";
+  /** JPEG の画像（base64）。プロンプトの前に、この順で渡す */
+  images?: string[];
 }): Promise<T> {
   const c = await getClient();
+  const content = [
+    ...(args.images ?? []).map((data) => ({ type: "image" as const, source: { type: "base64" as const, media_type: "image/jpeg" as const, data } })),
+    { type: "text" as const, text: args.prompt },
+  ];
   const res = await c.beta.messages.parse({
     model: args.model,
     max_tokens: 16000,
     system: args.system,
-    messages: [{ role: "user", content: args.prompt }],
+    messages: [{ role: "user", content }],
     output_config: { format: betaZodOutputFormat(args.schema), effort: args.effort ?? "medium" },
     betas: ["server-side-fallback-2026-07-01"],
     fallbacks: "default",
   });
   await recordUsage(args.purpose, res.model || args.model, args.model, res.usage);
-  if (res.stop_reason === "refusal") throw new RefusalError("AI が問題の作成を断りました");
+  if (res.stop_reason === "refusal") throw new RefusalError("AI が応答を断りました");
   if (!res.parsed_output) throw new Error("AI の応答が決まった形になっていません");
   return res.parsed_output;
 }

@@ -11,6 +11,10 @@ export const ROUTE_KEYS = [
   "POST /admin/generate",
   "GET /admin/tests",
   "POST /admin/tests",
+  "POST /admin/tests/{child}/{month}/photos",
+  "POST /admin/tests/{child}/{month}/grade",
+  "PUT /admin/tests/{child}/{month}",
+  "GET /tests",
 ] as const;
 
 export type RouteKey = (typeof ROUTE_KEYS)[number];

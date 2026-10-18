@@ -2,6 +2,7 @@
 import type { ItemType } from "./items/text";
 import type { Mastery } from "./study/srs";
 import type { TestQuestion } from "./test/compose";
+import type { FinalVerdict, GradedAnswer } from "./test/grade";
 
 /** 保護者（parents グループ）か子ども（children グループ） */
 export type Role = "parent" | "child";
@@ -86,13 +87,41 @@ export interface JobSummary {
 }
 
 /** 月例テスト（P-11、TST-03〜06）。問題と並びを保存し、PDF はブラウザで作り直す */
+export type TestStatus = "created" | "grading" | "graded" | "retake" | "failed" | "confirmed";
+
 export interface MonthlyTest {
   childId: string;
   month: string;
   title: string;
-  status: "created";
+  /** created（作成）→ grading（採点中）→ graded（確認待ち）→ confirmed（確定）。retake は撮り直し、failed は採点の失敗 */
+  status: TestStatus;
   createdAt: string;
   questions: TestQuestion[];
+  /** 採点の結果（TST-08、TST-09） */
+  answers?: GradedAnswer[];
+  /** 撮り直しの理由や、採点の失敗の内容（TST-10） */
+  problems?: string[];
+  /** 確定した判定と点数（TST-11） */
+  verdicts?: Record<number, FinalVerdict>;
+  score?: number;
+  confirmedAt?: string;
+  /** 確認画面で切り抜きを出すための写真の URL（有効期限5分）。確認待ちのときだけ */
+  photoUrls?: string[];
+}
+
+/** POST /admin/tests/{child}/{month}/photos の応答。S3 に直接アップロードする（PHO-01、TST-07） */
+export interface PhotoUploads {
+  uploads: { url: string; fields: Record<string, string> }[];
+}
+
+/** GET /tests の応答（K-07、TST-11） */
+export interface TestResult {
+  month: string;
+  title: string;
+  score: number;
+  total: number;
+  /** 間違えた字（書き取り・読みの対象の字） */
+  missed: string[];
 }
 
 /** GET /admin/tests の応答 */

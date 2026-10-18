@@ -3,6 +3,7 @@ import { formatKun, GRADE5 } from "../../../shared/kanji";
 import type { TodayResponse } from "../../../shared/types";
 import { api } from "../api";
 import { ModelFigure } from "../components/KanjiFigure";
+import { TestResultCard } from "../components/TestResultCard";
 import { KanjiMap } from "./KanjiMap";
 import { Practice } from "./Practice";
 
@@ -92,6 +93,8 @@ export function ChildHome({ nickname, onSignOut }: { nickname: string; onSignOut
               ))}
             </section>
           )}
+
+          <TestResultCard />
 
           <section className="card stack">
             <p>れんぞく {today.streak} 日</p>

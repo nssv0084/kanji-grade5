@@ -516,6 +516,46 @@ details summary {
   font-weight: 700;
 }
 
+.grading {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 12px;
+}
+
+.grading li {
+  border-top: 1px solid var(--border);
+  padding-top: 10px;
+  display: grid;
+  gap: 6px;
+}
+
+.grading li.needs-check {
+  border-left: 4px solid var(--accent);
+  padding-left: 8px;
+}
+
+.crop {
+  display: block;
+  max-width: 100%;
+  max-height: 120px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: #fff;
+}
+
+.small {
+  font-size: 0.85rem;
+  margin: 0;
+}
+
+.missed {
+  font-size: 1.4rem;
+  font-weight: 700;
+  letter-spacing: 0.2em;
+}
+
 .tests {
   margin: 0;
   padding: 0;
