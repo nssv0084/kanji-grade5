@@ -3,6 +3,7 @@ import type { Me } from "../../shared/types";
 import { getCaller, requireParent, type Caller } from "./lib/auth";
 import { HttpError, json } from "./lib/http";
 import type { RouteKey } from "./routes";
+import { getKanjiMap, getToday, submitAnswer } from "./study";
 
 type Handler = (
   caller: Caller,
@@ -11,6 +12,9 @@ type Handler = (
 
 const handlers: Record<RouteKey, Handler> = {
   "GET /me": async (caller) => json(200, { nickname: caller.nickname, role: caller.role } satisfies Me),
+  "GET /today": async (caller) => json(200, await getToday(caller)),
+  "POST /answers": async (caller, event) => json(200, await submitAnswer(caller, event)),
+  "GET /kanji": async (caller) => json(200, await getKanjiMap(caller)),
 };
 
 export async function handler(event: APIGatewayProxyEventV2WithJWTAuthorizer): Promise<APIGatewayProxyResultV2> {

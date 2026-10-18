@@ -11,12 +11,12 @@
 | エンティティ | pk | sk | gsi1pk | gsi1sk | 内容 |
 |---|---|---|---|---|---|
 | 問題（Item） | `ITEM#{itemId}` | `META` | `ITEMS#{type}#{status}` | `{kanji}#{createdAt}` | 対象の漢字、問題文、答え、選択肢、元の写真、生成情報 |
-| ユーザー | `USER#{sub}` | `PROFILE` | `USERS#{role}` | `{username}` | ニックネーム、連続学習日数、覚えた字数などの集計 |
+| ユーザー | `USER#{sub}` | `PROFILE` | — | — | 連続学習日数（days）と最後に学習した日（lastStudyDate）。ニックネームは Cognito に持つ |
 | 習った漢字・定着度 | `USER#{sub}` | `KANJI#{kanji}` | — | — | 習った日、定着度、形式別の解答数・正答数、直近の結果、最後に出題した日 |
 | 日別の学習量 | `USER#{sub}` | `DAY#{date}` | — | — | 日別の解答数・正答数（形式別） |
 | 解答履歴 | `USER#{sub}` | `ANS#{timestamp}#{itemId}` | — | — | 選んだ答え・入力した読み・照合の結果（スコア、書き順の正誤）、子どもが自分で○×を選んだか（HWR-03、HWR-10） |
-| 問題ごとの状態 | `USER#{sub}` | `QS#{itemId}` | `REVIEW#{sub}`（復習中のみ） | `{nextReviewDate}` | 解答回数、連続正解数、復習の予定日 |
-| その日の学習 | `USER#{sub}` | `SESSION#{date}` | — | — | その日のセット構成と、どこまで解いたか |
+| 問題ごとの状態 | `USER#{sub}` | `QS#{itemId}` | — | — | 解答回数（attempts）、正解数（correct）、復習の予定日（nextReview。復習中のみ）、復習での連続正解数（reviewStreak）、最後に解いた日 |
+| その日の学習 | `USER#{sub}` | `SESSION#{date}` | — | — | その日に新しく習った字（newKanji）、出題する問題と枠（slots: itemId と new・review・check）、解答（answers）、終わったか（done）。最初に開いたときに組み立てて固定する |
 | 写真の取り込み | `IMPORT#{importId}` | `META` | `IMPORTS` | `{createdAt}` | 種類（ドリル・教科書の漢字一覧）、写真の S3 キー、状態、読み取り結果（漢字・読み・熟語、または学習順）、確定日時 |
 | 学習計画 | `USER#{sub}` | `PLAN#{年度}` | — | — | 学習順（193字の並び）、月ごとの割り当て（各月の最初と最後の字の位置）、開始位置、1日の字数。教科書の順はここにだけ持ち、リポジトリには入れない（CUR-08） |
 | 月例テスト | `USER#{sub}` | `MTEST#{yyyy-mm}` | `MTESTS#{status}` | `{createdAt}` | 対象の月、出題した問題と並び、解答欄の位置（PDF 上の座標）、PDF・写真の S3 キー、状態、問題ごとの採点結果（読み取った字、判定、自信、保護者の修正）、点数 |
@@ -34,7 +34,7 @@
 |---|---|
 | 出題できる問題 | GSI `ITEMS#{type}#approved` を `begins_with(gsi1sk, "{kanji}#")` で Query |
 | 習った漢字と定着度（漢字マップ） | `USER#{sub}` を `begins_with(sk, "KANJI#")` で Query（最大193件） |
-| 今日の復習 | GSI `REVIEW#{sub}` を `gsi1sk <= 今日` で Query |
+| 今日の練習の組み立て | `USER#{sub}` を `begins_with(sk, "QS#")` と `"KANJI#"` で Query し、出題できる問題（GSI `ITEMS#{type}#approved`・`#review`）と合わせて shared/study/session.ts で選ぶ（1人分で最大 約2,100件のため、復習用の GSI は持たない） |
 | 確認待ち | GSI `ITEMS#{type}#review`、`APPEALS#open`、`REPORTS#open`、`IMPORTS` を Query |
 | 採点の確認待ちの月例テスト | GSI `MTESTS#graded` を Query |
 | 今月の新しい漢字 | `USER#{sub}` の `PLAN#{年度}` を GetItem し、`KANJI#` の習った日と突き合わせる |
