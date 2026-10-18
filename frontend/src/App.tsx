@@ -33,6 +33,7 @@ export function App() {
   const [samples, setSamples] = useState<Sample[]>(loadSamples);
   const [recorded, setRecorded] = useState(false);
   const [message, setMessage] = useState("");
+  const [sendMessage, setSendMessage] = useState("");
 
   const entry = GRADE5[char];
   const verdict = result ? decide(result.m, thresholds) : null;
@@ -88,6 +89,23 @@ export function App() {
     a.download = `kanji-samples-${new Date().toISOString().slice(0, 10)}.json`;
     a.click();
     URL.revokeObjectURL(a.href);
+  };
+
+  // 開発サーバーで動かしているときだけ、PC の samples/ に送れる（vite.config.ts の受け口）
+  const sendToPc = async () => {
+    setSendMessage("送っています…");
+    try {
+      const res = await fetch("/__samples", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ thresholds, samples }),
+      });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const { count } = (await res.json()) as { count: number };
+      setSendMessage(`PC に ${count} 件を送りました。`);
+    } catch (e) {
+      setSendMessage(`PC に送れませんでした（${(e as Error).message}）。JSON で書き出してください。`);
+    }
   };
 
   const clearSamples = () => {
@@ -221,6 +239,11 @@ export function App() {
           {summary.falseReject} 件、あいまい {summary.unsure} 件
         </p>
         <div className="pad-actions">
+          {import.meta.env.DEV && (
+            <button type="button" className="primary" disabled={samples.length === 0} onClick={sendToPc}>
+              PC に送る
+            </button>
+          )}
           <button type="button" className="secondary" disabled={samples.length === 0} onClick={exportSamples}>
             JSON で書き出す
           </button>
@@ -228,6 +251,7 @@ export function App() {
             記録を消す
           </button>
         </div>
+        {sendMessage && <p className="send-message">{sendMessage}</p>}
       </section>
 
       <details className="card">

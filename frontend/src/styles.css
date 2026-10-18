@@ -353,3 +353,8 @@ details summary {
   font-size: 0.8rem;
   text-align: center;
 }
+
+.send-message {
+  margin: 8px 0 0;
+  color: var(--muted);
+}
