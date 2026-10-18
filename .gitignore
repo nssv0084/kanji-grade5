@@ -1,0 +1,12 @@
+node_modules/
+dist/
+cdk.out/
+*.log
+.env*
+!.env.example
+frontend/public/config.json
+
+.claude/settings.local.json
+
+# 手書き判定の試作で使う手元のサンプル（子どもの筆跡）
+samples/
