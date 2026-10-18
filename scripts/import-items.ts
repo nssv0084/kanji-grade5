@@ -9,7 +9,7 @@ import { arg, checkAccount, documentClient, stackOutput } from "./aws";
 // 使い方: npx tsx scripts/import-items.ts --file samples/seed-items.json --status approved --source "..."
 // 同じ問題文は同じ ID になり、二度目は登録しない（何度実行してもよい）
 
-const file = arg("file");
+const file = arg("file") ?? "";
 const status = (arg("status") ?? "review") as ItemStatus;
 const source = arg("source") ?? "手入力";
 if (!file || !["approved", "review"].includes(status)) {
@@ -25,36 +25,44 @@ if (bad.length > 0) {
   process.exit(1);
 }
 
-checkAccount();
-const table = stackOutput("TableName");
-const ddb = documentClient();
-const createdAt = new Date().toISOString();
-let added = 0;
-for (const item of items) {
-  const itemId = `${item.type}-${createHash("sha1").update(item.text).digest("hex").slice(0, 12)}`;
-  try {
-    await ddb.send(
-      new PutCommand({
-        TableName: table,
-        Item: {
-          pk: `ITEM#${itemId}`,
-          sk: "META",
-          itemId,
-          kanji: item.kanji,
-          type: item.type,
-          text: item.text,
-          status,
-          source,
-          createdAt,
-          gsi1pk: `ITEMS#${item.type}#${status}`,
-          gsi1sk: `${item.kanji}#${createdAt}`,
-        },
-        ConditionExpression: "attribute_not_exists(pk)",
-      }),
-    );
-    added++;
-  } catch (e) {
-    if ((e as Error).name !== "ConditionalCheckFailedException") throw e;
+// 最上位の await は使えない（ルートの package.json が CommonJS のため）ので、関数にまとめる
+async function main() {
+  checkAccount();
+  const table = stackOutput("TableName");
+  const ddb = documentClient();
+  const createdAt = new Date().toISOString();
+  let added = 0;
+  for (const item of items) {
+    const itemId = `${item.type}-${createHash("sha1").update(item.text).digest("hex").slice(0, 12)}`;
+    try {
+      await ddb.send(
+        new PutCommand({
+          TableName: table,
+          Item: {
+            pk: `ITEM#${itemId}`,
+            sk: "META",
+            itemId,
+            kanji: item.kanji,
+            type: item.type,
+            text: item.text,
+            status,
+            source,
+            createdAt,
+            gsi1pk: `ITEMS#${item.type}#${status}`,
+            gsi1sk: `${item.kanji}#${createdAt}`,
+          },
+          ConditionExpression: "attribute_not_exists(pk)",
+        }),
+      );
+      added++;
+    } catch (e) {
+      if ((e as Error).name !== "ConditionalCheckFailedException") throw e;
+    }
   }
+  console.log(`${items.length} 問のうち ${added} 問を登録しました（${status}）。すでにあった問題はそのまま`);
 }
-console.log(`${items.length} 問のうち ${added} 問を登録しました（${status}）。すでにあった問題はそのまま`);
+
+main().catch((e) => {
+  console.error(e);
+  process.exit(1);
+});
