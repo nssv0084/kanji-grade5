@@ -14,7 +14,7 @@
 | ユーザー | `USER#{sub}` | `PROFILE` | `USERS#{role}` | `{username}` | ニックネーム、連続学習日数、覚えた字数などの集計 |
 | 習った漢字・定着度 | `USER#{sub}` | `KANJI#{kanji}` | — | — | 習った日、定着度、形式別の解答数・正答数、直近の結果、最後に出題した日 |
 | 日別の学習量 | `USER#{sub}` | `DAY#{date}` | — | — | 日別の解答数・正答数（形式別） |
-| 解答履歴 | `USER#{sub}` | `ANS#{timestamp}#{itemId}` | — | — | 選んだ答え・入力した読み・照合の結果（スコア、書き順の正誤）、AI 判定の有無 |
+| 解答履歴 | `USER#{sub}` | `ANS#{timestamp}#{itemId}` | — | — | 選んだ答え・入力した読み・照合の結果（スコア、書き順の正誤）、子どもが自分で○×を選んだか（HWR-03、HWR-10） |
 | 問題ごとの状態 | `USER#{sub}` | `QS#{itemId}` | `REVIEW#{sub}`（復習中のみ） | `{nextReviewDate}` | 解答回数、連続正解数、復習の予定日 |
 | その日の学習 | `USER#{sub}` | `SESSION#{date}` | — | — | その日のセット構成と、どこまで解いたか |
 | まとめテスト | `USER#{sub}` | `TEST#{timestamp}` | — | — | 出題した問題、解答、得点 |
@@ -25,7 +25,6 @@
 | 保護者の承認数 | `STATS` | `APPROVED#{type}` | — | — | 確認の進み具合（LVL-04） |
 | API 使用額 | `USAGE` | `TOTAL#{yyyy-mm}` | — | — | 月ごとの累計費用（マイクロドル単位の整数） |
 | API 使用記録 | `USAGE` | `LOG#{timestamp}` | — | — | 用途、モデル、トークン数、費用 |
-| AI 判定の回数 | `USER#{sub}` | `HWR#{date}` | — | — | その日の AI 判定の回数（HWR-03 の上限） |
 | 設定 | `SETTINGS` | `GLOBAL` | — | — | 予算、用途別のモデル、問題数、上限、アラート日数 |
 
 ## 主な読み方
