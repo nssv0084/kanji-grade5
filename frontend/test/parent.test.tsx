@@ -48,6 +48,7 @@ const child: ChildDashboard = {
   idleAlert: true,
   week: Array.from({ length: 7 }, (_, i) => ({ date: `2026-10-${14 + i}`, answers: i === 3 ? 15 : 0, correct: i === 3 ? 12 : 0 })),
   weakKanji: [{ kanji: "護", recent: [true, false, false] }],
+  testScores: [{ month: "2026-09", score: 24, total: 30 }],
   progress: { learnedCount: 22, monthTarget: 30, behind: 2, reviewMonth: false, daysLeft: 128 },
 };
 const item: AdminItem = { itemId: "write-1", kanji: "評", type: "write", text: "新しいゲームは{好評|こうひょう}だ。", status: "review", source: "ai", createdAt: "x" };
@@ -75,6 +76,7 @@ describe("保護者のホーム", () => {
     expect(await screen.findByText("護")).toBeInTheDocument();
     expect(screen.getByText("直近の書き取り ○××")).toBeInTheDocument();
     expect(screen.getByText("予定より 2 字遅れ")).toBeInTheDocument();
+    expect(screen.getByText("9月 24 / 30（80%）")).toBeInTheDocument();
   });
 
   it("[TST-03] 月の最終週に印刷をうながし、今月のテストを作れる", async () => {

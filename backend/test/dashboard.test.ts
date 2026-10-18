@@ -60,6 +60,15 @@ describe("保護者のダッシュボード", () => {
     expect(s.progress).toMatchObject({ reviewMonth: true, behind: 0, daysLeft: 11 });
   });
 
+  it("[DSH-05] 月例テストの点数を古い月から並べる", () => {
+    const tests = [
+      { month: "2026-11", score: 27, total: 30 },
+      { month: "2026-10", score: 24, total: 30 },
+    ];
+    expect(summarize({ ...base, today: "2026-11-30", profile: { days: 0 }, tests }).testScores.map((t) => t.month)).toEqual(["2026-10", "2026-11"]);
+    expect(summarize({ ...base, today: "2026-10-20", profile: { days: 0 } }).testScores).toEqual([]);
+  });
+
   it("[DSH-05] 学習計画がなければ進み具合を出さない", () => {
     expect(summarize({ ...base, plan: undefined, today: "2026-10-20", profile: { days: 0 } }).progress).toBeUndefined();
   });
