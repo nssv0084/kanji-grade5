@@ -149,7 +149,32 @@ describe("問題の生成", () => {
     appT.hasResourceProperties("AWS::Lambda::Function", { Timeout: 900 });
   });
 
-  it("[NFR-06] 生成の Lambda のエラーも通知する", () => {
-    appT.resourceCountIs("AWS::CloudWatch::Alarm", 2);
+  it("[NFR-06] 生成・採点の Lambda のエラーも通知する", () => {
+    appT.resourceCountIs("AWS::CloudWatch::Alarm", 3);
+  });
+});
+
+describe("月例テストの写真と採点", () => {
+  const photoBucket = () =>
+    Object.values(appT.findResources("AWS::S3::Bucket")).find((b) => JSON.stringify(b.Properties.LifecycleConfiguration ?? {}).includes("tests/"));
+
+  it("[TST-12] 解答用紙の写真は非公開で、30日で自動削除する", () => {
+    const b = photoBucket();
+    expect(b).toBeDefined();
+    expect(b!.Properties.PublicAccessBlockConfiguration).toEqual({ BlockPublicAcls: true, BlockPublicPolicy: true, IgnorePublicAcls: true, RestrictPublicBuckets: true });
+    const rules = b!.Properties.LifecycleConfiguration.Rules as { Prefix?: string; ExpirationInDays?: number }[];
+    expect(rules.find((r) => r.Prefix === "tests/")?.ExpirationInDays).toBe(30);
+  });
+
+  it("[TST-07] 写真のアップロードは、このアプリの画面からだけ受け付ける", () => {
+    const origins = photoBucket()!.Properties.CorsConfiguration.CorsRules.flatMap((r: { AllowedOrigins: string[] }) => r.AllowedOrigins);
+    expect(origins).toContain(`https://${config.domainName}`);
+    expect(origins).not.toContain("*");
+  });
+
+  it("[TST-08] 採点も、失敗したとき自動で再実行しない（二重の課金を防ぐ）", () => {
+    const configs = Object.values(appT.findResources("AWS::Lambda::EventInvokeConfig"));
+    expect(configs).toHaveLength(2);
+    for (const c of configs) expect(c.Properties.MaximumRetryAttempts).toBe(0);
   });
 });

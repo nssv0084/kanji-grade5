@@ -146,15 +146,66 @@ export class AppStack extends Stack {
       targets: [new eventTargets.LambdaFunction(generatorFn, { event: events.RuleTargetInput.fromObject({ trigger: "scheduled" }), retryAttempts: 0 })],
     });
 
+    // ---------- 写真（PHO-01、TST-12） ----------
+    // 非公開。ブラウザから署名付き URL で直接アップロードし、期限で消す
+    const photoBucket = new s3.Bucket(this, "PhotoBucket", {
+      blockPublicAccess: s3.BlockPublicAccess.BLOCK_ALL,
+      enforceSSL: true,
+      encryption: s3.BucketEncryption.S3_MANAGED,
+      lifecycleRules: [
+        { id: "tests-30days", prefix: "tests/", expiration: Duration.days(30) },
+        { id: "abort-uploads", abortIncompleteMultipartUploadAfter: Duration.days(1) },
+      ],
+      cors: [
+        {
+          allowedOrigins: [siteOrigin, "http://localhost:5173"],
+          allowedMethods: [s3.HttpMethods.POST, s3.HttpMethods.GET],
+          allowedHeaders: ["*"],
+          maxAge: 3600,
+        },
+      ],
+      // 写真は期限で消えるもので、残す必要がない
+      removalPolicy: RemovalPolicy.DESTROY,
+      autoDeleteObjects: true,
+    });
+
+    // ---------- 月例テストの採点（TST-08） ----------
+    const graderFn = new NodejsFunction(this, "GraderFn", {
+      ...commonFnProps,
+      // S3 の署名などの SDK はランタイムにないことがあるため、すべて同梱する
+      bundling: { ...commonFnProps.bundling, externalModules: [] },
+      memorySize: 1024,
+      entry: path.join(repoRoot, "backend/src/grader.ts"),
+      timeout: Duration.minutes(5),
+      // 失敗時に自動で再実行すると二重に課金されるため、再試行しない
+      retryAttempts: 0,
+      environment: {
+        TABLE_NAME: table.tableName,
+        PHOTO_BUCKET: photoBucket.bucketName,
+        ANTHROPIC_SECRET_ID: anthropicSecret.secretName,
+        NODE_OPTIONS: "--enable-source-maps",
+      },
+      logGroup: new logs.LogGroup(this, "GraderFnLogs", {
+        retention: logs.RetentionDays.ONE_MONTH,
+        removalPolicy: RemovalPolicy.DESTROY,
+      }),
+    });
+    table.grantReadWriteData(graderFn);
+    anthropicSecret.grantRead(graderFn);
+    photoBucket.grantRead(graderFn, "tests/*");
+
     // ---------- API ----------
     const apiFn = new NodejsFunction(this, "ApiFn", {
       ...commonFnProps,
+      bundling: { ...commonFnProps.bundling, externalModules: [] },
       entry: path.join(repoRoot, "backend/src/api.ts"),
       timeout: Duration.seconds(10),
       environment: {
         TABLE_NAME: table.tableName,
         USER_POOL_ID: userPool.userPoolId,
         GENERATOR_FN_NAME: generatorFn.functionName,
+        GRADER_FN_NAME: graderFn.functionName,
+        PHOTO_BUCKET: photoBucket.bucketName,
         NODE_OPTIONS: "--enable-source-maps",
       },
       logGroup: new logs.LogGroup(this, "ApiFnLogs", {
@@ -167,6 +218,11 @@ export class AppStack extends Stack {
     generatorFn.grantInvoke(apiFn);
     // 月例テストを作る子どもを選ぶため、子どもの一覧を読む（TST-03）
     userPool.grant(apiFn, "cognito-idp:ListUsersInGroup");
+    // 解答用紙の写真のアップロード先と、確認の画面で見せる URL を発行する（署名に使う権限）
+    photoBucket.grantPut(apiFn, "tests/*");
+    photoBucket.grantRead(apiFn, "tests/*");
+    // 保護者の「採点する」で採点を起動する
+    graderFn.grantInvoke(apiFn);
 
     const httpApi = new apigw.HttpApi(this, "HttpApi", {
       corsPreflight: {
@@ -266,6 +322,14 @@ export class AppStack extends Stack {
         evaluationPeriods: 1,
         treatMissingData: cloudwatch.TreatMissingData.NOT_BREACHING,
         alarmDescription: "漢字アプリの問題生成の Lambda でエラーが発生しました",
+      }).addAlarmAction(new cwActions.SnsAction(topic));
+
+      new cloudwatch.Alarm(this, "GraderErrors", {
+        metric: graderFn.metricErrors({ period: Duration.minutes(5) }),
+        threshold: 1,
+        evaluationPeriods: 1,
+        treatMissingData: cloudwatch.TreatMissingData.NOT_BREACHING,
+        alarmDescription: "漢字アプリの月例テストの採点の Lambda でエラーが発生しました",
       }).addAlarmAction(new cwActions.SnsAction(topic));
 
       // 英検アプリと同じアカウントのため、アカウント全体ではなくこのアプリのリソースに付けたタグで絞る

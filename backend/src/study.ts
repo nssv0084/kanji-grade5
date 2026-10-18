@@ -135,6 +135,32 @@ function parseAnswer(event: APIGatewayProxyEventV2WithJWTAuthorizer): AnswerRequ
   return { date: b.date, index: b.index as number, correct: b.correct, selfJudged: b.selfJudged === true };
 }
 
+/**
+ * 1問の結果を、問題ごとの復習（REV-01〜04）と漢字の定着度（MAP-01）に記録する。毎日の練習と月例テスト（TST-11）で使う。
+ * items を渡すと、間違えたときの同じ字の別の問題を探すのに使う（何問もまとめて記録するとき、毎回読み直さないため）
+ */
+export async function recordResult(sub: string, item: StudyItem, correct: boolean, today: string, items?: StudyItem[]): Promise<void> {
+  const prevQ = await getItem<QuestionRecord>(keys.question(sub, item.itemId));
+  const nextQ = nextQuestionState(prevQ, correct, today);
+  await putItem({ ...keys.question(sub, item.itemId), itemId: item.itemId, ...nextQ });
+
+  // 書き取りの結果だけを定着度に使う
+  const k = await getItem<KanjiRecord>(keys.kanji(sub, item.kanji));
+  const writes = k?.writes ?? [];
+  if (item.type === "write") writes.push({ date: today, correct });
+  await saveKanji(sub, item.kanji, { learnedOn: k?.learnedOn ?? today, writes: writes.slice(-KEEP_WRITES), lastAsked: today });
+
+  // 書き取りで間違えたら、同じ字の別の書き取り問題も翌日の復習に入れる（REV-04）
+  if (!correct && item.type === "write") {
+    const [all, kanji, questions] = await Promise.all([items ?? loadItems(), loadKanji(sub), loadQuestions(sub)]);
+    const sibling = siblingForReview(item, all, kanji, questions);
+    if (sibling) {
+      const s = nextQuestionState(questions[sibling.itemId], false, today);
+      await putItem({ ...keys.question(sub, sibling.itemId), itemId: sibling.itemId, ...s, attempts: questions[sibling.itemId]?.attempts ?? 0, correct: questions[sibling.itemId]?.correct ?? 0 });
+    }
+  }
+}
+
 export async function submitAnswer(caller: Caller, event: APIGatewayProxyEventV2WithJWTAuthorizer, now = new Date()): Promise<AnswerResponse> {
   const req = parseAnswer(event);
   const today = studyDate(now);
@@ -146,27 +172,7 @@ export async function submitAnswer(caller: Caller, event: APIGatewayProxyEventV2
 
   const item = await getItem<StudyItem & { pk: string }>(keys.item(slot.itemId));
   if (!item) throw new HttpError(404, "問題が見つかりません");
-
-  // 問題ごとの状態（REV-01〜03）
-  const prevQ = await getItem<QuestionRecord>(keys.question(caller.sub, item.itemId));
-  const nextQ = nextQuestionState(prevQ, req.correct, today);
-  await putItem({ ...keys.question(caller.sub, item.itemId), itemId: item.itemId, ...nextQ });
-
-  // 漢字ごとの状態（MAP-01）。書き取りの結果だけを定着度に使う
-  const k = await getItem<KanjiRecord>(keys.kanji(caller.sub, item.kanji));
-  const writes = k?.writes ?? [];
-  if (item.type === "write") writes.push({ date: today, correct: req.correct });
-  await saveKanji(caller.sub, item.kanji, { learnedOn: k?.learnedOn ?? today, writes: writes.slice(-KEEP_WRITES), lastAsked: today });
-
-  // 書き取りで間違えたら、同じ字の別の書き取り問題も翌日の復習に入れる（REV-04）
-  if (!req.correct && item.type === "write") {
-    const [items, kanji, questions] = await Promise.all([loadItems(), loadKanji(caller.sub), loadQuestions(caller.sub)]);
-    const sibling = siblingForReview(item, items, kanji, questions);
-    if (sibling) {
-      const s = nextQuestionState(questions[sibling.itemId], false, today);
-      await putItem({ ...keys.question(caller.sub, sibling.itemId), itemId: sibling.itemId, ...s, attempts: questions[sibling.itemId]?.attempts ?? 0, correct: questions[sibling.itemId]?.correct ?? 0 });
-    }
-  }
+  await recordResult(caller.sub, item, req.correct, today);
 
   session.answers.push({ index: req.index, correct: req.correct, selfJudged: req.selfJudged });
   session.done = session.answers.length >= session.slots.length;
