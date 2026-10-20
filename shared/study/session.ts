@@ -97,6 +97,12 @@ export function siblingForReview(missed: StudyItem, items: StudyItem[], kanji: R
     .sort(byPriority(questions))[0];
 }
 
+/** 出題できる枠をすべて解いたら、今日の練習は終わり（CUR-14。出題できなくなった問題は数えない） */
+export function isSessionDone(slots: Slot[], answered: number[], servable: Set<string>): boolean {
+  const done = new Set(answered);
+  return slots.every((s, i) => done.has(i) || !servable.has(s.itemId));
+}
+
 export function toSets<T>(slots: T[]): T[][] {
   const sets: T[][] = [];
   for (let i = 0; i < slots.length; i += SET_SIZE) sets.push(slots.slice(i, i + SET_SIZE));

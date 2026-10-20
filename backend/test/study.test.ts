@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { addDays, studyDate } from "../../shared/study/dates";
 import { behindBy, monthTarget, newKanjiForDay, periodOn, type Plan } from "../../shared/study/plan";
-import { buildSession, isEligible, SESSION_LIMIT, siblingForReview, toSets, type KanjiState, type StudyItem } from "../../shared/study/session";
+import { buildSession, isEligible, isSessionDone, SESSION_LIMIT, siblingForReview, toSets, type KanjiState, type StudyItem } from "../../shared/study/session";
 import { mastery, needsCheck, nextQuestionState } from "../../shared/study/srs";
 import { currentStreak, isStudyDay, markStudied, milestoneToCelebrate } from "../../shared/study/streak";
 
@@ -145,6 +145,13 @@ describe("今日の練習", () => {
 
   it("[CUR-03] 5問ずつの小セットに分ける", () => {
     expect(toSets([1, 2, 3, 4, 5, 6, 7]).map((s) => s.length)).toEqual([5, 2]);
+  });
+
+  it("[CUR-14] 出題できなくなった問題は、今日の練習を終えたかの判定に数えない", () => {
+    const slots = [{ itemId: "a", reason: "new" as const }, { itemId: "b", reason: "new" as const }, { itemId: "c", reason: "check" as const }];
+    expect(isSessionDone(slots, [0, 1], new Set(["a", "b", "c"]))).toBe(false);
+    expect(isSessionDone(slots, [0, 1], new Set(["a", "b"]))).toBe(true);
+    expect(isSessionDone(slots, [0], new Set(["a", "b"]))).toBe(false);
   });
 
   it("[CUR-04] 新しい漢字がない日は復習と確認だけで組み立てる", () => {

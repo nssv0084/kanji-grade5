@@ -655,3 +655,43 @@ details summary {
   margin: 0;
   line-height: 1.9;
 }
+
+.set-steps {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  gap: 6px;
+}
+
+.set-steps li {
+  flex: 1;
+  text-align: center;
+  padding: 8px 0;
+  border-radius: var(--radius-sm);
+  border: 2px dashed var(--border);
+  color: var(--muted);
+  font-size: 0.9rem;
+  font-weight: 700;
+}
+
+.set-steps li.done {
+  border: 2px solid var(--primary);
+  background: var(--primary);
+  color: #fff;
+}
+
+.set-steps li.current {
+  border: 2px solid var(--primary);
+  color: var(--primary-strong);
+  background: var(--primary-soft);
+}
+
+.set-steps li.goal {
+  border: 2px solid var(--accent);
+  color: var(--accent);
+}
+
+.day-left {
+  border: 2px solid var(--primary);
+}

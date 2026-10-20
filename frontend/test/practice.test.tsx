@@ -23,7 +23,7 @@ describe("練習", () => {
   it("読み: ひらがなで答え、カタカナでも正解になり、結果を送る", async () => {
     const user = userEvent.setup();
     const onDone = vi.fn();
-    render(<Practice date="2026-10-20" set={[read]} setNo={1} setCount={2} onDone={onDone} />);
+    render(<Practice date="2026-10-20" set={[read]} setNo={1} setCount={2} dayDone={0} dayTotal={1} onDone={onDone} />);
     expect(screen.getByText("評価")).toBeInTheDocument();
     await user.type(screen.getByRole("textbox"), "ヒョウカ");
     await user.click(screen.getByRole("button", { name: "こたえる" }));
@@ -34,9 +34,34 @@ describe("練習", () => {
     expect(screen.getByText("れんぞく 3 日！")).toBeInTheDocument();
   });
 
+  it("[CUR-13] 問題の画面に今日全体の何問目かを出し、セットの終わりに残りと「つぎのセットへ」を出す", async () => {
+    const user = userEvent.setup();
+    const onDone = vi.fn();
+    render(<Practice date="2026-10-20" set={[read]} setNo={2} setCount={3} dayDone={5} dayTotal={15} onDone={onDone} />);
+    expect(screen.getByText("今日 6 / 15 もん（セット 2 / 3）")).toBeInTheDocument();
+    await user.type(screen.getByRole("textbox"), "ひょうか");
+    await user.click(screen.getByRole("button", { name: "こたえる" }));
+    await user.click(screen.getByRole("button", { name: "つぎへ" }));
+    expect(await screen.findByText("あと 9 もんで今日の練習はおわり！")).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "つぎのセットへ" }));
+    expect(onDone).toHaveBeenCalledWith(true);
+    await user.click(screen.getByRole("button", { name: "あとでやる" }));
+    expect(onDone).toHaveBeenLastCalledWith(false);
+  });
+
+  it("[CUR-13] 最後のセットを終えたら「今日の練習はぜんぶおわり」と出す", async () => {
+    const user = userEvent.setup();
+    render(<Practice date="2026-10-20" set={[read]} setNo={3} setCount={3} dayDone={14} dayTotal={15} onDone={vi.fn()} />);
+    await user.type(screen.getByRole("textbox"), "ひょうか");
+    await user.click(screen.getByRole("button", { name: "こたえる" }));
+    await user.click(screen.getByRole("button", { name: "つぎへ" }));
+    expect(await screen.findByRole("heading", { name: "今日の練習はぜんぶおわり！" })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "つぎのセットへ" })).not.toBeInTheDocument();
+  });
+
   it("[HWR-01] 書き取り: 4年生までの字は印刷し、5年生の字だけ書かせる", async () => {
     const user = userEvent.setup();
-    render(<Practice date="2026-10-20" set={[write]} setNo={1} setCount={1} onDone={vi.fn()} />);
+    render(<Practice date="2026-10-20" set={[write]} setNo={1} setCount={1} dayDone={0} dayTotal={1} onDone={vi.fn()} />);
     expect(screen.getByText("好")).toBeInTheDocument();
     expect(screen.getByText("□の漢字を書こう（0 画）")).toBeInTheDocument();
     draw(screen.getByTestId("writing-pad"));
@@ -51,7 +76,7 @@ describe("練習", () => {
   it("送れなかったときは、その問題にとどまって知らせる", async () => {
     api.mockRejectedValueOnce(new Error("通信エラー"));
     const user = userEvent.setup();
-    render(<Practice date="2026-10-20" set={[read]} setNo={1} setCount={1} onDone={vi.fn()} />);
+    render(<Practice date="2026-10-20" set={[read]} setNo={1} setCount={1} dayDone={0} dayTotal={1} onDone={vi.fn()} />);
     await user.type(screen.getByRole("textbox"), "ひょうか");
     await user.click(screen.getByRole("button", { name: "こたえる" }));
     await user.click(screen.getByRole("button", { name: "つぎへ" }));
