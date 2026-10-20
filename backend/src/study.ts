@@ -3,7 +3,7 @@ import { GRADE5_CHARS } from "../../shared/kanji";
 import { learnedCount } from "../../shared/study/dashboard";
 import { studyDate } from "../../shared/study/dates";
 import { newKanjiForDay, planOrder, type Plan } from "../../shared/study/plan";
-import { buildSession, siblingForReview, toSets, type KanjiState, type Slot, type StudyItem } from "../../shared/study/session";
+import { buildSession, isSessionDone, siblingForReview, toSets, type KanjiState, type Slot, type StudyItem } from "../../shared/study/session";
 import { mastery, nextQuestionState, type QuestionState } from "../../shared/study/srs";
 import { currentStreak, isStudyDay, markStudied, milestoneToCelebrate, type Streak } from "../../shared/study/streak";
 import type { AnswerRequest, AnswerResponse, KanjiMapEntry, PracticeQuestion, TodayResponse } from "../../shared/types";
@@ -191,7 +191,8 @@ export async function submitAnswer(caller: Caller, event: APIGatewayProxyEventV2
   await recordResult(caller.sub, item, req.correct, today);
 
   session.answers.push({ index: req.index, correct: req.correct, selfJudged: req.selfJudged });
-  session.done = session.answers.length >= session.slots.length;
+  const servable = new Set((await loadItems()).map((i) => i.itemId));
+  session.done = isSessionDone(session.slots, session.answers.map((a) => a.index), servable);
   await putItem({ ...session });
 
   // 日別の学習量と、連続学習日数（STK-01）

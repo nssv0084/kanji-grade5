@@ -25,23 +25,28 @@ export function ChildHome({ nickname, onSignOut }: { nickname: string; onSignOut
   if (view === "map") return <KanjiMap onBack={() => setView("home")} />;
 
   const nextSet = today?.sets.findIndex((s) => s.some((q) => !q.answered)) ?? -1;
+  const total = today?.sets.flat().length ?? 0;
+  const done = today?.sets.flat().filter((q) => q.answered).length ?? 0;
+
   if (view === "practice" && today && nextSet >= 0) {
     return (
       <Practice
+        key={nextSet}
         date={today.date}
         set={today.sets[nextSet]}
         setNo={nextSet + 1}
         setCount={today.sets.length}
-        onDone={() => {
-          setView("home");
+        dayDone={done}
+        dayTotal={total}
+        onDone={(next) => {
+          // 読み直すまで前のセットを出さないように、いったん空にする
+          setToday(null);
+          setView(next ? "practice" : "home");
           load();
         }}
       />
     );
   }
-
-  const total = today?.sets.flat().length ?? 0;
-  const done = today?.sets.flat().filter((q) => q.answered).length ?? 0;
 
   return (
     <main className="page">
@@ -77,9 +82,21 @@ export function ChildHome({ nickname, onSignOut }: { nickname: string; onSignOut
               <p>今日の問題はまだないよ。</p>
             ) : done < total ? (
               <>
+                <p className="big">あと {total - done} もんで今日はおわり</p>
                 <p>
-                  {done} / {total} もん（セット {nextSet + 1} / {today.sets.length}）
+                  今日は {total} もん（{done} もん できた）
                 </p>
+                <ol className="set-steps" aria-label="今日のセット">
+                  {today.sets.map((s, i) => {
+                    const finished = s.every((q) => q.answered);
+                    return (
+                      <li key={i} className={finished ? "done" : i === nextSet ? "current" : ""}>
+                        {finished ? "✓" : `セット${i + 1}`}
+                      </li>
+                    );
+                  })}
+                  <li className="goal">おわり</li>
+                </ol>
                 <button type="button" className="primary wide" onClick={() => setView("practice")}>
                   {done === 0 ? "はじめる" : "つづきから"}
                 </button>
