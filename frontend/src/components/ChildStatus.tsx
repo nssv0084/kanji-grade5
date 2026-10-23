@@ -1,9 +1,30 @@
 import { useEffect, useState } from "react";
+import type { Tally } from "../../../shared/study/dashboard";
 import type { ChildDashboard, PasswordReset } from "../../../shared/types";
 import { api } from "../api";
 
 const WEEKDAY = ["日", "月", "火", "水", "木", "金", "土"];
 const dayLabel = (date: string) => `${Number(date.slice(8))}(${WEEKDAY[new Date(`${date}T00:00:00Z`).getUTCDay()]})`;
+
+const percent = (t: Tally) => Math.round((t.correct / t.answers) * 100);
+const rate = (t: Tally) => `${percent(t)}%（${t.correct} / ${t.answers}問）`;
+
+/** 7日分を合わせた正答率（DSH-06） */
+function WeekRate({ t }: { t: ChildDashboard["weekTotal"] }) {
+  if (!t.answers) return null;
+  const { write, read } = t.byType;
+  return (
+    <p>
+      この7日の正答率 {rate(t)}
+      {(write.answers > 0 || read.answers > 0) && (
+        <>
+          <br />
+          {[write.answers > 0 && `書き取り ${rate(write)}`, read.answers > 0 && `読み ${rate(read)}`].filter(Boolean).join(" ・ ")}
+        </>
+      )}
+    </p>
+  );
+}
 
 function Progress({ p }: { p: NonNullable<ChildDashboard["progress"]> }) {
   if (p.reviewMonth) return <p>復習の月です（期の終わりまで {p.daysLeft} 日）。</p>;
@@ -35,13 +56,20 @@ function Child({ c, showName }: { c: ChildDashboard; showName: boolean }) {
 
       <div className="week" role="list" aria-label="7日分の学習量">
         {c.week.map((d) => (
-          <div key={d.date} className="week-day" role="listitem" aria-label={`${dayLabel(d.date)} ${d.answers}問`}>
+          <div
+            key={d.date}
+            className="week-day"
+            role="listitem"
+            aria-label={`${dayLabel(d.date)} ${d.answers}問${d.answers ? ` 正解${d.correct}（${percent(d)}%）` : ""}`}
+          >
             <span className="week-count">{d.answers || ""}</span>
             <span className="week-bar" style={{ height: `${(d.answers / max) * 60}px` }} />
             <span className="week-label">{dayLabel(d.date)}</span>
+            <span className="week-rate">{d.answers ? `${percent(d)}%` : ""}</span>
           </div>
         ))}
       </div>
+      <WeekRate t={c.weekTotal} />
 
       {c.testScores.length > 0 && (
         <div className="stack">
@@ -116,7 +144,7 @@ function PasswordResetButton({ childId }: { childId: string }) {
   );
 }
 
-// P-01: 子どもの状況（DSH-01、DSH-02、DSH-05、STK-03）
+// P-01: 子どもの状況（DSH-01、DSH-02、DSH-05、DSH-06、STK-03）
 export function ChildStatus() {
   const [children, setChildren] = useState<ChildDashboard[] | null>(null);
   const [error, setError] = useState("");

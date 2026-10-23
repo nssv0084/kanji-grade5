@@ -606,9 +606,14 @@ details summary {
   background: var(--primary);
 }
 
-.week-label {
+.week-label,
+.week-rate {
   color: var(--muted);
   white-space: nowrap;
+}
+
+.week-rate {
+  min-height: 1.2em;
 }
 
 .score-list {

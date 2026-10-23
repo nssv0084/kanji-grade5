@@ -1,6 +1,6 @@
 import type { APIGatewayProxyEventV2WithJWTAuthorizer } from "aws-lambda";
 import { GRADE5_CHARS } from "../../shared/kanji";
-import { learnedCount } from "../../shared/study/dashboard";
+import { addAnswer, learnedCount, type DayTally } from "../../shared/study/dashboard";
 import { studyDate } from "../../shared/study/dates";
 import { newKanjiForDay, planOrder, type Plan } from "../../shared/study/plan";
 import { buildSession, isSessionDone, siblingForReview, toSets, type KanjiState, type Slot, type StudyItem } from "../../shared/study/session";
@@ -195,11 +195,9 @@ export async function submitAnswer(caller: Caller, event: APIGatewayProxyEventV2
   session.done = isSessionDone(session.slots, session.answers.map((a) => a.index), servable);
   await putItem({ ...session });
 
-  // 日別の学習量と、連続学習日数（STK-01）
-  const day = (await getItem<{ answers: number; correct: number }>(keys.day(caller.sub, today))) ?? { answers: 0, correct: 0 };
-  day.answers += 1;
-  if (req.correct) day.correct += 1;
-  await putItem({ ...keys.day(caller.sub, today), answers: day.answers, correct: day.correct });
+  // 日別の学習量（DSH-06）と、連続学習日数（STK-01）
+  const day = addAnswer(await getItem<DayTally>(keys.day(caller.sub, today)), item.type, req.correct);
+  await putItem({ ...keys.day(caller.sub, today), answers: day.answers, correct: day.correct, byType: day.byType });
 
   let profile: Streak = (await getItem<ProfileRecord>(keys.profile(caller.sub))) ?? { days: 0 };
   if (isStudyDay(day.answers, session.done && session.date === today)) {

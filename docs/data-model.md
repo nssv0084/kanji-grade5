@@ -13,7 +13,7 @@
 | 問題（Item） | `ITEM#{itemId}` | `META` | `ITEMS#{type}#{status}` | `{kanji}#{createdAt}` | 対象の漢字（kanji）、形式（type: write・read）、問題文（text: {漢字|よみ} の形）、状態（status）、作成元（source: ai、または保護者が確認して登録したときの説明）、生成に使ったモデル（model）、保護者が承認したか（approvedBy: parent）、確認日時（reviewedAt）、作成日時 |
 | ユーザー | `USER#{sub}` | `PROFILE` | — | — | 連続学習日数（days）と最後に学習した日（lastStudyDate）、お祝いした「覚えた」字数の区切り（celebrated、STK-04）。項目ごとに UpdateItem で書き換える（互いに消さないため）。ニックネームは Cognito に持つ |
 | 習った漢字・定着度 | `USER#{sub}` | `KANJI#{kanji}` | — | — | 習った日、定着度、形式別の解答数・正答数、直近の結果、最後に出題した日 |
-| 日別の学習量 | `USER#{sub}` | `DAY#{date}` | — | — | 日別の解答数・正答数（形式別） |
+| 日別の学習量 | `USER#{sub}` | `DAY#{date}` | — | — | 日別の解答数・正答数（answers、correct）と、形式別の解答数・正答数（byType: write・read ごとの answers、correct。2026-10-24 以降の記録だけにある）（DSH-06） |
 | 解答履歴 | `USER#{sub}` | `ANS#{timestamp}#{itemId}` | — | — | 選んだ答え・入力した読み・照合の結果（スコア、書き順の正誤）、子どもが自分で○×を選んだか（HWR-03、HWR-10） |
 | 問題ごとの状態 | `USER#{sub}` | `QS#{itemId}` | — | — | 解答回数（attempts）、正解数（correct）、復習の予定日（nextReview。復習中のみ）、復習での連続正解数（reviewStreak）、最後に解いた日 |
 | その日の学習 | `USER#{sub}` | `SESSION#{date}` | — | — | その日に新しく習った字（newKanji）、出題する問題と枠（slots: itemId と new・review・check）、解答（answers）、終わったか（done）。最初に開いたときに組み立てて固定する |

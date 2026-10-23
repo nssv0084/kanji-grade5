@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { summarize } from "../../shared/study/dashboard";
+import { addAnswer, summarize } from "../../shared/study/dashboard";
 import type { Plan } from "../../shared/study/plan";
 import type { KanjiState } from "../../shared/study/session";
 
@@ -31,6 +31,25 @@ describe("保護者のダッシュボード", () => {
     expect(s.week.map((d) => d.date)).toEqual(["2026-10-14", "2026-10-15", "2026-10-16", "2026-10-17", "2026-10-18", "2026-10-19", "2026-10-20"]);
     expect(s.week[5]).toEqual({ date: "2026-10-19", answers: 15, correct: 12 });
     expect(s.week[6].answers).toBe(0);
+  });
+
+  it("[DSH-06] 解答を日別の学習量に、全体と形式別で足す", () => {
+    let day = addAnswer(undefined, "write", true);
+    day = addAnswer(day, "write", false);
+    day = addAnswer(day, "read", true);
+    expect(day).toEqual({ answers: 3, correct: 2, byType: { write: { answers: 2, correct: 1 }, read: { answers: 1, correct: 1 } } });
+    // 形式別を記録する前の日に足しても、全体の数は引き継ぐ
+    expect(addAnswer({ answers: 10, correct: 7 }, "read", false)).toEqual({ answers: 11, correct: 7, byType: { read: { answers: 1, correct: 0 } } });
+  });
+
+  it("[DSH-06] 7日分を合わせた正答率を、全体と形式別で出す（形式別は記録のある日だけ）", () => {
+    const days = [
+      { date: "2026-10-13", answers: 15, correct: 15, byType: { write: { answers: 15, correct: 15 } } },
+      { date: "2026-10-18", answers: 10, correct: 6 },
+      { date: "2026-10-19", answers: 15, correct: 12, byType: { write: { answers: 9, correct: 6 }, read: { answers: 6, correct: 6 } } },
+    ];
+    const s = summarize({ ...base, days, today: "2026-10-20", profile: { days: 0 } });
+    expect(s.weekTotal).toEqual({ answers: 25, correct: 18, byType: { write: { answers: 9, correct: 6 }, read: { answers: 6, correct: 6 } } });
   });
 
   it("[STK-03] 最後の学習から2日以上空いたら知らせる", () => {

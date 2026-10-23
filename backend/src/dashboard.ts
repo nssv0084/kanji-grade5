@@ -1,5 +1,5 @@
 import { GRADE5_CHARS } from "../../shared/kanji";
-import { summarize, type DayAmount } from "../../shared/study/dashboard";
+import { summarize, type DayAmount, type DayTally } from "../../shared/study/dashboard";
 import { addDays, studyDate } from "../../shared/study/dates";
 import type { Streak } from "../../shared/study/streak";
 import type { ChildDashboard } from "../../shared/types";
@@ -8,14 +8,14 @@ import { getItem, keys, queryAll, queryUserPrefix } from "./lib/db";
 import type { TestRecord } from "./monthlyTest";
 import { loadKanji, loadPlan } from "./study";
 
-// 保護者のダッシュボード（P-01、DSH-01、DSH-02、DSH-05、STK-03）
+// 保護者のダッシュボード（P-01、DSH-01、DSH-02、DSH-05、DSH-06、STK-03）
 
 async function recentDays(sub: string, today: string): Promise<DayAmount[]> {
-  const rows = await queryAll<{ sk: string; answers: number; correct: number }>({
+  const rows = await queryAll<DayTally & { sk: string }>({
     KeyConditionExpression: "pk = :pk AND sk BETWEEN :from AND :to",
     ExpressionAttributeValues: { ":pk": `USER#${sub}`, ":from": `DAY#${addDays(today, -6)}`, ":to": `DAY#${today}` },
   });
-  return rows.map((r) => ({ date: r.sk.slice(4), answers: r.answers, correct: r.correct }));
+  return rows.map((r) => ({ date: r.sk.slice(4), answers: r.answers, correct: r.correct, ...(r.byType && { byType: r.byType }) }));
 }
 
 export async function getChildren(now = new Date()): Promise<ChildDashboard[]> {
