@@ -47,6 +47,7 @@ const child: ChildDashboard = {
   idleDays: 3,
   idleAlert: true,
   week: Array.from({ length: 7 }, (_, i) => ({ date: `2026-10-${14 + i}`, answers: i === 3 ? 15 : 0, correct: i === 3 ? 12 : 0 })),
+  weekTotal: { answers: 15, correct: 12, byType: { write: { answers: 9, correct: 6 }, read: { answers: 0, correct: 0 } } },
   weakKanji: [{ kanji: "護", recent: [true, false, false] }],
   testScores: [{ month: "2026-09", score: 24, total: 30 }],
   progress: { learnedCount: 22, monthTarget: 30, behind: 2, reviewMonth: false, daysLeft: 128 },
@@ -68,7 +69,15 @@ describe("保護者のホーム", () => {
     render(<ParentHome nickname="パパ" onOpenLab={vi.fn()} onSignOut={vi.fn()} />);
     expect(await screen.findByText("最後の学習から 3 日たっています")).toBeInTheDocument();
     expect(screen.getByText(/習った字 22 ・ 覚えた字 1 ・ 苦手な字 1（全 193 字）/)).toBeInTheDocument();
-    expect(screen.getByRole("listitem", { name: "17(土) 15問" })).toBeInTheDocument();
+    expect(screen.getByRole("listitem", { name: "17(土) 15問 正解12（80%）" })).toBeInTheDocument();
+  });
+
+  it("[DSH-06] 日ごとと7日分の正答率を出し、解答のない形式は出さない", async () => {
+    render(<ParentHome nickname="パパ" onOpenLab={vi.fn()} onSignOut={vi.fn()} />);
+    expect(await screen.findByText(/この7日の正答率 80%（12 \/ 15問）/)).toBeInTheDocument();
+    expect(screen.getByText(/書き取り 67%（6 \/ 9問）/)).toBeInTheDocument();
+    expect(screen.queryByText(/読み \d+%/)).not.toBeInTheDocument();
+    expect(screen.getByRole("listitem", { name: "14(水) 0問" })).toBeInTheDocument();
   });
 
   it("[ACC-05] 確かめてから子どもの仮パスワードを再発行し、一度だけ表示する", async () => {

@@ -1,19 +1,38 @@
+import type { ItemType } from "../items/text";
 import { addDays, daysBetween } from "./dates";
 import { behindBy, monthTarget, periodOn, planOrder, type Plan } from "./plan";
 import type { KanjiState } from "./session";
 import { mastery } from "./srs";
 import { currentStreak, type Streak } from "./streak";
 
-// 保護者のダッシュボードの集計（DSH-01、DSH-02、DSH-05、STK-03）
+// 保護者のダッシュボードの集計（DSH-01、DSH-02、DSH-05、DSH-06、STK-03）
 
 /** 最後の学習からこの日数以上空いたら目立たせる（STK-03。設定画面ができたら変えられるようにする） */
 export const IDLE_ALERT_DAYS = 2;
 const WEEK = 7;
 
-export interface DayAmount {
-  date: string;
+export interface Tally {
   answers: number;
   correct: number;
+}
+
+/** 日別の学習量（DAY#）。byType は形式別に記録するようになってからの日だけにある（DSH-06） */
+export interface DayTally extends Tally {
+  byType?: Partial<Record<ItemType, Tally>>;
+}
+
+export interface DayAmount extends DayTally {
+  date: string;
+}
+
+/** 1問の解答を日別の学習量に足す */
+export function addAnswer(day: DayTally | undefined, type: ItemType, correct: boolean): DayTally {
+  const add = (t: Tally | undefined): Tally => ({ answers: (t?.answers ?? 0) + 1, correct: (t?.correct ?? 0) + (correct ? 1 : 0) });
+  return { ...add(day), byType: { ...day?.byType, [type]: add(day?.byType?.[type]) } };
+}
+
+function sum(tallies: (Tally | undefined)[]): Tally {
+  return tallies.reduce<Tally>((s, t) => ({ answers: s.answers + (t?.answers ?? 0), correct: s.correct + (t?.correct ?? 0) }), { answers: 0, correct: 0 });
 }
 
 export interface TestScore {
@@ -34,6 +53,8 @@ export interface ChildSummary {
   idleAlert: boolean;
   /** 今日までの7日分（古い順）（DSH-01） */
   week: DayAmount[];
+  /** 7日分を合わせた正答率（DSH-06）。形式別は byType を記録した日だけで数える */
+  weekTotal: Tally & { byType: Record<ItemType, Tally> };
   /** 苦手な字と、直近の書き取りの結果（古い順）（DSH-02） */
   weakKanji: { kanji: string; recent: boolean[] }[];
   /** 確定した月例テストの点数（古い月から）（DSH-05） */
@@ -87,6 +108,11 @@ export function summarize(args: {
     };
   }
 
+  const week = Array.from({ length: WEEK }, (_, i) => {
+    const date = addDays(today, i - WEEK + 1);
+    return byDate.get(date) ?? { date, answers: 0, correct: 0 };
+  });
+
   return {
     learned: states.filter((x) => x.m !== "unlearned").length,
     mastered: states.filter((x) => x.m === "mastered").length,
@@ -97,10 +123,11 @@ export function summarize(args: {
     idleDays,
     // 計画があるのに一度も学習していないときも知らせる
     idleAlert: idleDays === undefined ? !!plan : idleDays >= IDLE_ALERT_DAYS,
-    week: Array.from({ length: WEEK }, (_, i) => {
-      const date = addDays(today, i - WEEK + 1);
-      return byDate.get(date) ?? { date, answers: 0, correct: 0 };
-    }),
+    week,
+    weekTotal: {
+      ...sum(week),
+      byType: { write: sum(week.map((d) => d.byType?.write)), read: sum(week.map((d) => d.byType?.read)) },
+    },
     weakKanji: states
       .filter((x) => x.m === "weak")
       .sort((a, b) => (plan ? planOrder(plan).indexOf(a.k) - planOrder(plan).indexOf(b.k) : a.k.localeCompare(b.k)))
