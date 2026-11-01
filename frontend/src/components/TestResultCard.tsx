@@ -2,8 +2,8 @@ import { useEffect, useState } from "react";
 import type { TestResult } from "../../../shared/types";
 import { api } from "../api";
 
-// K-07: 月例テストの結果（TST-11）。いちばん新しいテストと、前の月との差
-export function TestResultCard() {
+// K-07: 月例テストの結果（TST-11）。いちばん新しいテストと、前の月との差。間違えた問題は1回解き直す（TST-14）
+export function TestResultCard({ onRetry }: { onRetry: (r: TestResult) => void }) {
   const [results, setResults] = useState<TestResult[] | null>(null);
 
   useEffect(() => {
@@ -40,6 +40,14 @@ export function TestResultCard() {
       ) : (
         <p>ぜんぶ正しく書けたね！</p>
       )}
+      {latest.retry.length > 0 &&
+        (latest.retried ? (
+          <p>まちがえた問題をやりなおしたね。</p>
+        ) : (
+          <button type="button" className="primary wide" onClick={() => onRetry(latest)}>
+            まちがえた問題をやりなおそう（{latest.retry.length} もん）
+          </button>
+        ))}
     </section>
   );
 }

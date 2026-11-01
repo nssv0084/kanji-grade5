@@ -1,10 +1,11 @@
 import { randomUUID } from "node:crypto";
 import { InvocationType, InvokeCommand, LambdaClient } from "@aws-sdk/client-lambda";
-import { PutCommand } from "@aws-sdk/lib-dynamodb";
+import { PutCommand, UpdateCommand } from "@aws-sdk/lib-dynamodb";
 import type { APIGatewayProxyEventV2WithJWTAuthorizer } from "aws-lambda";
 import { studyDate } from "../../shared/study/dates";
 import { composeTest, defaultCounts, isLastWeek, testTitle } from "../../shared/test/compose";
 import { finalize, type FinalVerdict } from "../../shared/test/grade";
+import { testResult } from "../../shared/test/result";
 import type { MonthlyTest, PhotoUploads, TestResult, TestsResponse } from "../../shared/types";
 import type { Caller } from "./lib/auth";
 import { listChildren } from "./lib/children";
@@ -160,11 +161,26 @@ export async function myResults(caller: Caller): Promise<TestResult[]> {
   return rows
     .filter((r) => r.status === "confirmed" && r.verdicts)
     .sort((a, b) => b.month.localeCompare(a.month))
-    .map((r) => ({
-      month: r.month,
-      title: r.title,
-      score: r.score ?? 0,
-      total: r.questions.length,
-      missed: [...new Set(r.questions.filter((q) => r.verdicts?.[q.no] !== "correct").map((q) => q.kanji))],
-    }));
+    .map((r) => testResult(toTest(r)));
+}
+
+/** 子どもが間違えた問題を解き直し終えたことを記録する（TST-14）。復習・定着度には記録しない */
+export async function markRetried(caller: Caller, event: APIGatewayProxyEventV2WithJWTAuthorizer, now = new Date()): Promise<void> {
+  const month = event.pathParameters?.month;
+  if (!month || !/^\d{4}-\d{2}$/.test(month)) throw new HttpError(400, "テストの指定が正しくありません");
+  try {
+    await ddb.send(
+      new UpdateCommand({
+        TableName: TABLE_NAME,
+        Key: keys.monthlyTest(caller.sub, month),
+        UpdateExpression: "SET retriedAt = if_not_exists(retriedAt, :t)",
+        ConditionExpression: "#s = :confirmed",
+        ExpressionAttributeNames: { "#s": "status" },
+        ExpressionAttributeValues: { ":t": now.toISOString(), ":confirmed": "confirmed" },
+      }),
+    );
+  } catch (e) {
+    if ((e as Error).name === "ConditionalCheckFailedException") throw new HttpError(404, "確定したテストが見つかりません");
+    throw e;
+  }
 }

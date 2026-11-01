@@ -1,11 +1,12 @@
 import { useCallback, useEffect, useState } from "react";
 import { formatKun, GRADE5 } from "../../../shared/kanji";
-import type { TodayResponse } from "../../../shared/types";
+import type { TestResult, TodayResponse } from "../../../shared/types";
 import { api } from "../api";
 import { ModelFigure } from "../components/KanjiFigure";
 import { TestResultCard } from "../components/TestResultCard";
 import { KanjiMap } from "./KanjiMap";
 import { Practice } from "./Practice";
+import { TestRetry } from "./TestRetry";
 
 // K-01 ホーム: 今日の練習、今日の新しい漢字、連続学習日数、覚えた字数
 export function ChildHome({ nickname, onSignOut }: { nickname: string; onSignOut: () => void }) {
@@ -13,6 +14,7 @@ export function ChildHome({ nickname, onSignOut }: { nickname: string; onSignOut
   const [error, setError] = useState("");
   const [view, setView] = useState<"home" | "practice" | "map">("home");
   const [celebrated, setCelebrated] = useState(false);
+  const [retry, setRetry] = useState<TestResult | null>(null);
 
   const load = useCallback(() => {
     setError("");
@@ -23,6 +25,7 @@ export function ChildHome({ nickname, onSignOut }: { nickname: string; onSignOut
   useEffect(load, [load]);
 
   if (view === "map") return <KanjiMap onBack={() => setView("home")} />;
+  if (retry) return <TestRetry result={retry} onDone={() => setRetry(null)} />;
 
   const nextSet = today?.sets.findIndex((s) => s.some((q) => !q.answered)) ?? -1;
   const total = today?.sets.flat().length ?? 0;
@@ -123,7 +126,7 @@ export function ChildHome({ nickname, onSignOut }: { nickname: string; onSignOut
             </section>
           )}
 
-          <TestResultCard />
+          <TestResultCard onRetry={setRetry} />
 
           <section className="card stack">
             <p>れんぞく {today.streak} 日</p>
