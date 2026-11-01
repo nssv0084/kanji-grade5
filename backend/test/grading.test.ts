@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { budgetMicroUsd, DEFAULT_SETTINGS, gradingOverBudget } from "../../shared/generation/cost";
 import type { TestQuestion } from "../../shared/test/compose";
 import { expectedAnswer, finalize, gradingPrompt, judgeAnswers, retakeReasons, type SheetReading } from "../../shared/test/grade";
+import { testResult } from "../../shared/test/result";
 
 const questions: TestQuestion[] = [
   { no: 1, itemId: "w1", kanji: "評", type: "write", text: "新しいゲームは{好評|こうひょう}だ。" },
@@ -93,6 +94,21 @@ describe("月例テストの採点", () => {
     const r = judgeAnswers(questions.slice(0, 1), reading([ans(1, "評", { photo: 3 })]), 1);
     expect(r[0].box).toBeUndefined();
     expect(r[0].needsCheck).toBe(true);
+  });
+});
+
+describe("子どもに見せる結果", () => {
+  const confirmed = { childId: "c1", month: "2026-11", title: "11月の漢字テスト", status: "confirmed" as const, createdAt: "x", questions, score: 1 };
+
+  it("[TST-14] 間違えた問題を解き直す問題として返す", () => {
+    const r = testResult({ ...confirmed, verdicts: { 1: "wrong", 2: "correct", 3: "wrong" } });
+    expect(r.retry.map((q) => q.no)).toEqual([1, 3]);
+    expect(r.missed).toEqual(["評"]);
+    expect(r.retried).toBe(false);
+  });
+
+  it("[TST-14] 解き直した日時があれば、やりなおし済みにする", () => {
+    expect(testResult({ ...confirmed, verdicts: { 1: "wrong", 2: "correct", 3: "correct" }, retriedAt: "2026-11-02T10:00:00Z" }).retried).toBe(true);
   });
 });
 

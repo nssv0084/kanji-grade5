@@ -108,6 +108,8 @@ export interface MonthlyTest {
   verdicts?: Record<number, FinalVerdict>;
   score?: number;
   confirmedAt?: string;
+  /** 子どもが間違えた問題を解き直した日時（TST-14） */
+  retriedAt?: string;
   /** 確認画面で切り抜きを出すための写真の URL（有効期限5分）。確認待ちのときだけ */
   photoUrls?: string[];
 }
@@ -125,6 +127,10 @@ export interface TestResult {
   total: number;
   /** 間違えた字（書き取り・読みの対象の字） */
   missed: string[];
+  /** 解き直す問題（間違えた問題、TST-14）。書き取りは端末で判定するため答えを含む */
+  retry: TestQuestion[];
+  /** もう解き直したか */
+  retried: boolean;
 }
 
 /** GET /admin/children の応答の1件（P-01、DSH-01、DSH-02、DSH-05） */

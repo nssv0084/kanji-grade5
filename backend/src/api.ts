@@ -7,7 +7,7 @@ import { resetChildPassword } from "./lib/children";
 import { HttpError, json, noStore } from "./lib/http";
 import type { RouteKey } from "./routes";
 import { getKanjiMap, getToday, submitAnswer } from "./study";
-import { confirmTest, createTest, createUploads, listTests, myResults, startGrading } from "./monthlyTest";
+import { confirmTest, createTest, createUploads, listTests, markRetried, myResults, startGrading } from "./monthlyTest";
 
 type Handler = (
   caller: Caller,
@@ -32,6 +32,10 @@ const handlers: Record<RouteKey, Handler> = {
   "POST /admin/tests/{child}/{month}/grade": async (_c, event) => json(202, await startGrading(event)),
   "PUT /admin/tests/{child}/{month}": async (_c, event) => json(200, await confirmTest(event)),
   "GET /tests": async (caller) => json(200, await myResults(caller)),
+  "POST /tests/{month}/retried": async (caller, event) => {
+    await markRetried(caller, event);
+    return json(200, {});
+  },
 };
 
 export async function handler(event: APIGatewayProxyEventV2WithJWTAuthorizer): Promise<APIGatewayProxyResultV2> {
