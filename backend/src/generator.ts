@@ -86,18 +86,20 @@ async function run(job: JobRecord): Promise<void> {
     const allowed = [...new Set([...child.learned, need.kanji])];
     const existing = items.filter((i) => i.kanji === need.kanji).map((i) => ({ type: i.type, text: i.text }));
     let remaining = { write: need.write, read: need.read };
+    const rejectedTexts: string[] = [];
 
     for (let round = 0; round <= RETRY_ROUNDS && remaining.write + remaining.read > 0; round++) {
       const generated = await askStructured({
         model: settings.generationModel,
         system: GENERATION_SYSTEM,
-        prompt: generationPrompt({ kanji: need.kanji, write: remaining.write, read: remaining.read, allowedGrade5: allowed, existing: existing.map((e) => e.text) }),
+        prompt: generationPrompt({ kanji: need.kanji, write: remaining.write, read: remaining.read, allowedGrade5: allowed, existing: existing.map((e) => e.text), rejected: rejectedTexts }),
         schema: GeneratedItems,
         purpose: `generate:${need.kanji}`,
       });
       const { kept, rejected } = screen(need.kanji, generated, existing);
       job.rejected += rejected.length;
       for (const r of rejected) console.log(`検査で除外 ${r.text}: ${r.reason}`);
+      rejectedTexts.push(...rejected.map((r) => r.text));
       if (kept.length === 0) continue;
 
       const verification = await askStructured({
@@ -110,6 +112,7 @@ async function run(job: JobRecord): Promise<void> {
       const { ok, failed } = passed(kept, verification);
       job.rejected += failed.length;
       for (const f of failed) console.log(`検証で除外 ${f.text}: ${f.reason}`);
+      rejectedTexts.push(...failed.map((f) => f.text));
 
       for (const c of pickWithin(ok, remaining)) {
         await saveCandidate(c, initialStatus(approvedByParent[c.type], Math.random()), settings.generationModel);
