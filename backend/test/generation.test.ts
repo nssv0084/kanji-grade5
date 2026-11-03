@@ -127,6 +127,14 @@ describe("問う語の重なり", () => {
   });
 });
 
+describe("作り直し", () => {
+  it("[GEN-12] 前の回で落ちた問題の語を、使わない語として渡す", () => {
+    const p = generationPrompt({ kanji: "妻", write: 1, read: 0, allowedGrade5: ["妻"], existing: [], rejected: ["公園で{老夫妻|ろうふさい}が休む。"] });
+    expect(p).toContain("前の回で問題として不合格になった語（これらの語も使わない）: 老夫妻");
+    expect(generationPrompt({ kanji: "妻", write: 1, read: 0, allowedGrade5: ["妻"], existing: [] })).not.toContain("不合格");
+  });
+});
+
 describe("小学校で習う読み", () => {
   it("[GEN-11] 中学校以降で習う読みは生成に渡さない", () => {
     const p = generationPrompt({ kanji: "因", write: 1, read: 1, allowedGrade5: ["因"], existing: [] });

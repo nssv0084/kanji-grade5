@@ -51,6 +51,8 @@ export function generationPrompt(args: {
   read: number;
   allowedGrade5: string[];
   existing: string[];
+  /** 前の回で検査・検証に落ちた問題文（GEN-12） */
+  rejected?: string[];
 }): string {
   const e = schoolReadings(args.kanji);
   const lower = Object.entries(KANJI_INFO)
@@ -68,7 +70,7 @@ export function generationPrompt(args: {
 - 5年生の漢字（習った字）: ${args.allowedGrade5.join("")}
 
 すでに使った語（これらの語は使わない）: ${usedWords(args.existing).join("、") || "なし"}
-
+${usedWords(args.rejected ?? []).length ? `前の回で問題として不合格になった語（これらの語も使わない）: ${usedWords(args.rejected ?? []).join("、")}\n` : ""}
 すでにある問題（同じ文を作らない）:
 ${args.existing.length ? args.existing.map((t) => `- ${t}`).join("\n") : "- なし"}`;
 }
