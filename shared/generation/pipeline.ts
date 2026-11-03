@@ -1,3 +1,5 @@
+import { GRADE5 } from "../kanji";
+import { schoolReadings } from "../kanji/later-readings";
 import { checkItem } from "../items/check";
 import { normalizeReading, parseText, targetOf, type ItemType } from "../items/text";
 import type { GeneratedItems, Verification, VerifyQuestion } from "./prompts";
@@ -56,8 +58,9 @@ export function kanjiNeedingItems(args: {
   const out: { kanji: string; write: number; read: number }[] = [];
   for (const k of args.order.slice(0, args.learnedCount + args.aheadCount)) {
     if ((args.misses?.[k] ?? 0) >= GIVE_UP_AFTER) continue;
-    const write = Math.max(0, TARGET_PER_KANJI.write - (args.counts[k]?.write ?? 0));
-    const read = Math.max(0, TARGET_PER_KANJI.read - (args.counts[k]?.read ?? 0));
+    const target = targetFor(k);
+    const write = Math.max(0, target.write - (args.counts[k]?.write ?? 0));
+    const read = Math.max(0, target.read - (args.counts[k]?.read ?? 0));
     if (write + read > 0) out.push({ kanji: k, write, read });
     if (out.length >= args.limit) break;
   }
@@ -109,3 +112,11 @@ export function initialStatus(parentApproved: number, random: number): "approved
 
 /** 1字あたりの目安（GEN-04）。送りがな・熟語は4択の画面ができてから */
 export const TARGET_PER_KANJI: Record<ItemType, number> = { write: 4, read: 3 };
+/** 小学校で習う読みが1つしかない字は、5年生が知っている語が少ないので減らす（GEN-04） */
+export const TARGET_SINGLE_READING: Record<ItemType, number> = { write: 2, read: 2 };
+
+export function targetFor(kanji: string): Record<ItemType, number> {
+  if (!(kanji in GRADE5)) return TARGET_PER_KANJI;
+  const r = schoolReadings(kanji);
+  return r.on.length + r.kun.length <= 1 ? TARGET_SINGLE_READING : TARGET_PER_KANJI;
+}

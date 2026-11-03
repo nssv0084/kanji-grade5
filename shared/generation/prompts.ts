@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { KANJI_INFO } from "../items/text";
-import { formatKun, GRADE5 } from "../kanji";
+import { formatKun } from "../kanji";
+import { schoolReadings } from "../kanji/later-readings";
 
 // 問題の生成と検証のプロンプト（GEN-04、LVL-03）。変えたら少量を試して、承認率と問題の例を PR に書く
 
@@ -34,7 +35,7 @@ export const GENERATION_SYSTEM = `あなたは小学5年生向けの漢字ドリ
 問う語の選び方:
 - 5年生がふだんの生活や教科書で目にする、よく使う言葉にする。大人向けの言葉、専門用語、四字熟語、古い言い回しは使わない
   （避ける例: 東経、木像、礼状、厚意、象形、喜色満面。使う例: 自然、学校、友だち、天気、ニュースに出てくる言葉）
-- 読みは、指定した音読み・訓読み（常用漢字表の読み）だけを使う。指定にない読みや、特別な読みは使わない
+- 読みは、指定した音読み・訓読み（小学校で習う読み）だけを使う。指定にない読みや、特別な読みは使わない
 - 1回で作る問題は、すべて別の語にする。「すでに使った語」と同じ語も使わない。同じ語で読み方だけ変えるのもしない
 
 問題文の書き方:
@@ -51,7 +52,7 @@ export function generationPrompt(args: {
   allowedGrade5: string[];
   existing: string[];
 }): string {
-  const e = GRADE5[args.kanji];
+  const e = schoolReadings(args.kanji);
   const lower = Object.entries(KANJI_INFO)
     .filter(([, i]) => i.grade <= 4)
     .map(([k]) => k)

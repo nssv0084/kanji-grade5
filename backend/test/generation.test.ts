@@ -1,7 +1,9 @@
 import { describe, expect, it } from "vitest";
 import { budgetMicroUsd, costMicroUsd, DEFAULT_SETTINGS, overBudget } from "../../shared/generation/cost";
-import { initialStatus, kanjiNeedingItems, passed, screen, toVerifyQuestions } from "../../shared/generation/pipeline";
+import { initialStatus, kanjiNeedingItems, passed, screen, targetFor, toVerifyQuestions } from "../../shared/generation/pipeline";
 import { generationPrompt } from "../../shared/generation/prompts";
+import { GRADE5 } from "../../shared/kanji";
+import { LATER_READINGS } from "../../shared/kanji/later-readings";
 
 describe("問題のふるい分け", () => {
   it("[LVL-01] 6年生以上の漢字が入った問題は落とす", () => {
@@ -122,6 +124,33 @@ describe("問う語の重なり", () => {
     const p = generationPrompt({ kanji: "象", write: 1, read: 1, allowedGrade5: ["象"], existing: [] });
     expect(p).toContain("音読み: ショウ・ゾウ");
     expect(p).toContain("訓読み: なし");
+  });
+});
+
+describe("小学校で習う読み", () => {
+  it("[GEN-11] 中学校以降で習う読みは生成に渡さない", () => {
+    const p = generationPrompt({ kanji: "因", write: 1, read: 1, allowedGrade5: ["因"], existing: [] });
+    expect(p).toContain("音読み: イン");
+    expect(p).toContain("訓読み: なし");
+    const q = generationPrompt({ kanji: "仮", write: 1, read: 1, allowedGrade5: ["仮"], existing: [] });
+    expect(q).toContain("音読み: カ\n");
+    expect(q).toContain("訓読み: かり");
+  });
+
+  it("[GEN-11] 一覧の読みは、すべて常用漢字表にある読み", () => {
+    for (const [k, rs] of Object.entries(LATER_READINGS)) {
+      for (const r of rs) expect([...GRADE5[k].on, ...GRADE5[k].kun], `${k} ${r}`).toContain(r);
+    }
+  });
+
+  it("[GEN-04] 小学校で習う読みが1つしかない字は、書き取り2問・読み2問にする", () => {
+    expect(targetFor("往")).toEqual({ write: 2, read: 2 });
+    expect(targetFor("在")).toEqual({ write: 2, read: 2 });
+    expect(targetFor("貸")).toEqual({ write: 4, read: 3 });
+    expect(kanjiNeedingItems({ order: ["往", "貸"], learnedCount: 2, aheadCount: 0, counts: { 往: { write: 1 } }, limit: 10 })).toEqual([
+      { kanji: "往", write: 1, read: 2 },
+      { kanji: "貸", write: 4, read: 3 },
+    ]);
   });
 });
 
