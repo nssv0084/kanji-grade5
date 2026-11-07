@@ -91,4 +91,22 @@ describe("保護者のダッシュボード", () => {
   it("[DSH-05] 学習計画がなければ進み具合を出さない", () => {
     expect(summarize({ ...base, plan: undefined, today: "2026-10-20", profile: { days: 0 } }).progress).toBeUndefined();
   });
+
+  it("[DSH-07] 回ごとに学習順で字を並べ、定着度と、アプリで習った日をつける", () => {
+    const learnedInApp = { ...kanji, [G5[20]]: { learnedOn: "2026-10-19", writes: [] } };
+    const lessons = summarize({ ...base, kanji: learnedInApp, today: "2026-10-20", profile: { days: 0 } }).lessons!;
+    expect(lessons.map((l) => [l.volume, l.no, l.kanji.length])).toEqual([["上", 1, 20], ["下", 1, 10], ["下", 2, 10]]);
+    expect(lessons[0].kanji.slice(0, 3)).toEqual([
+      { kanji: G5[0], mastery: "mastered" },
+      { kanji: G5[1], mastery: "weak" },
+      { kanji: G5[2], mastery: "learning" },
+    ]);
+    // 使い始める前の日付（まとめて「習った」にした字）には日付をつけない
+    expect(lessons[1].kanji.slice(0, 3)).toEqual([
+      { kanji: G5[20], mastery: "learning", learnedOn: "2026-10-19" },
+      { kanji: G5[21], mastery: "learning" },
+      { kanji: G5[22], mastery: "unlearned" },
+    ]);
+    expect(summarize({ ...base, plan: undefined, today: "2026-10-20", profile: { days: 0 } }).lessons).toBeUndefined();
+  });
 });

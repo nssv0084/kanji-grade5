@@ -641,6 +641,53 @@ details summary {
   min-width: 1.6em;
 }
 
+.learned-list summary::before {
+  content: "▶";
+  font-size: 0.7em;
+  margin-right: 6px;
+}
+
+.learned-list[open] summary::before {
+  content: "▼";
+}
+
+.lesson-row {
+  display: grid;
+  gap: 4px;
+}
+
+.lesson-label {
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+.learned-list .kanji-grid {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.learned-list .cell {
+  min-height: 44px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-size: 1.3rem;
+  line-height: 1.1;
+}
+
+.learned-list .cell.unlearned {
+  background: var(--surface);
+  color: var(--muted);
+}
+
+.cell-date {
+  font-size: 0.65rem;
+}
+
 .tests {
   margin: 0;
   padding: 0;

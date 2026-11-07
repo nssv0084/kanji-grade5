@@ -37,6 +37,43 @@ function Progress({ p }: { p: NonNullable<ChildDashboard["progress"]> }) {
   );
 }
 
+const LABEL = { unlearned: "まだ", learning: "練習中", mastered: "覚えた", weak: "苦手" } as const;
+const shortDate = (date: string) => `${Number(date.slice(5, 7))}/${Number(date.slice(8))}`;
+
+/** 習った字の一覧（DSH-07）。学校の進み具合と照らし合わせる */
+function LearnedList({ lessons }: { lessons: NonNullable<ChildDashboard["lessons"]> }) {
+  return (
+    <details className="learned-list">
+      <summary>習った字の一覧（学習順）</summary>
+      <div className="stack">
+        <p className="legend">
+          {(Object.keys(LABEL) as (keyof typeof LABEL)[]).map((m) => (
+            <span key={m} className={`chip ${m}`}>
+              {LABEL[m]}
+            </span>
+          ))}
+        </p>
+        <p className="small muted">日付はアプリで習った日。日付のない字は、使い始めたときに習ったことにした字です。</p>
+        {lessons.map((l) => (
+          <div key={`${l.volume}${l.no}`} className="lesson-row">
+            <span className="lesson-label">
+              {l.volume}巻 {l.no}回
+            </span>
+            <ul className="kanji-grid">
+              {l.kanji.map((k) => (
+                <li key={k.kanji} className={`cell ${k.mastery}`} aria-label={`${k.kanji} ${LABEL[k.mastery]}${k.learnedOn ? ` ${shortDate(k.learnedOn)}に習った` : ""}`}>
+                  <span>{k.kanji}</span>
+                  {k.learnedOn && <span className="cell-date">{shortDate(k.learnedOn)}</span>}
+                </li>
+              ))}
+            </ul>
+          </div>
+        ))}
+      </div>
+    </details>
+  );
+}
+
 function Child({ c, showName }: { c: ChildDashboard; showName: boolean }) {
   const max = Math.max(15, ...c.week.map((d) => d.answers));
   return (
@@ -98,6 +135,8 @@ function Child({ c, showName }: { c: ChildDashboard; showName: boolean }) {
         </div>
       )}
 
+      {c.lessons && <LearnedList lessons={c.lessons} />}
+
       <PasswordResetButton childId={c.childId} />
     </div>
   );
@@ -144,7 +183,7 @@ function PasswordResetButton({ childId }: { childId: string }) {
   );
 }
 
-// P-01: 子どもの状況（DSH-01、DSH-02、DSH-05、DSH-06、STK-03）
+// P-01: 子どもの状況（DSH-01、DSH-02、DSH-05〜07、STK-03）
 export function ChildStatus() {
   const [children, setChildren] = useState<ChildDashboard[] | null>(null);
   const [error, setError] = useState("");
