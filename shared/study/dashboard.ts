@@ -2,10 +2,10 @@ import type { ItemType } from "../items/text";
 import { addDays, daysBetween } from "./dates";
 import { behindBy, monthTarget, periodOn, planOrder, type Plan } from "./plan";
 import type { KanjiState } from "./session";
-import { mastery } from "./srs";
+import { mastery, type Mastery } from "./srs";
 import { currentStreak, type Streak } from "./streak";
 
-// 保護者のダッシュボードの集計（DSH-01、DSH-02、DSH-05、DSH-06、STK-03）
+// 保護者のダッシュボードの集計（DSH-01、DSH-02、DSH-05〜07、STK-03）
 
 /** 最後の学習からこの日数以上空いたら目立たせる（STK-03。設定画面ができたら変えられるようにする） */
 export const IDLE_ALERT_DAYS = 2;
@@ -71,6 +71,27 @@ export interface ChildSummary {
     /** 期（新しい漢字を学ぶ期間、または復習の月）の残り日数 */
     daysLeft?: number;
   };
+  /** 回ごとの習った字の一覧（DSH-07）。計画がなければ undefined */
+  lessons?: LessonKanji[];
+}
+
+export interface LessonKanji {
+  volume: "上" | "下";
+  no: number;
+  kanji: { kanji: string; mastery: Mastery; learnedOn?: string }[];
+}
+
+/** アプリで習った字にだけ習った日をつける。使い始める前の日付は、まとめて「習った」にした字（CUR-12） */
+function lessonKanji(plan: Plan, kanji: Record<string, KanjiState>): LessonKanji[] {
+  return plan.lessons.map((l) => ({
+    volume: l.volume,
+    no: l.no,
+    kanji: [...l.kanji].map((k) => {
+      const s = kanji[k];
+      const learnedOn = s?.learnedOn && s.learnedOn >= plan.startedOn ? s.learnedOn : undefined;
+      return { kanji: k, mastery: mastery(!!s?.learnedOn, s?.writes ?? []), ...(learnedOn && { learnedOn }) };
+    }),
+  }));
 }
 
 /** 学習順の先頭から、続けて習った字の数 */
@@ -134,5 +155,6 @@ export function summarize(args: {
       .map((x) => ({ kanji: x.k, recent: x.s.writes.slice(-5).map((w) => w.correct) })),
     testScores: [...tests].sort((a, b) => a.month.localeCompare(b.month)),
     progress,
+    lessons: plan && lessonKanji(plan, kanji),
   };
 }
